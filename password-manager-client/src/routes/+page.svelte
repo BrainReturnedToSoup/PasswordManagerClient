@@ -1,7 +1,7 @@
 <script>
   //*********TOOLS-HOOKS***********/
 
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { redirect } from "@sveltejs/kit";
 
   //**********COMPONENTS***********/
@@ -14,14 +14,13 @@
     firstAuthCheckStore,
     pendingAuthCheckStore,
     authStateStore,
-    checkAuthState,
+    checkAuth,
   } from "../lib/state/authState";
 
   const stores = {
     firstAuthCheckStore,
     pendingAuthCheckStore,
     authStateStore,
-    checkAuthState,
   }; //for property name reuse
 
   const subscriptions = {};
@@ -38,15 +37,11 @@
     onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
   }
 
-  onMount(() => {
-    //only check again if there isn't already a pending auth check, for instances of rapid navigation.
-    //the value of this store is a boolean
-    if (!currentAuthStoreVals.pendingAuthCheckStore) {
-      checkAuthState();
-      //async function for updating the auth state, includes managing auth related flags.
-      //has its own error handling internally
-    }
-  });
+  if (!currentAuthStoreVals.pendingAuthCheckStore) {
+    checkAuth();
+    //async function for updating the auth state, includes managing auth related flags.
+    //has its own error handling internally
+  }
 
   //**********AUTH-BASED-ROUTING************/
 
@@ -65,6 +60,3 @@
 <!--no need for a conditional, as the redirect will take care of the event of auth
 state request resolution. -->
 <Loading />
-
-<style>
-</style>

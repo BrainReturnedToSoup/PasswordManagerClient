@@ -15,9 +15,11 @@
   let email, password, confirmPassword;
   let pendingSubmit = false;
 
-  //*************CONSTRAINT-VALIDATION*************//
+  //*********************MISC***********************/
 
   const blankString = "";
+
+  //*************CONSTRAINT-VALIDATION*************//
 
   let errorTextEmail = blankString,
     errorTextPassword = blankString,
@@ -55,9 +57,25 @@
     }
   }
 
-  //************BUTTON-DISABLED-ATR-FLAG************//
+  function clearErrorTextServer() {
+    errorTextServer = blankString;
+  }
 
-  let allValidInputs =
+  function clearErrorTextEmail() {
+    errorTextEmail = blankString;
+  }
+
+  function clearErrorTextPassword() {
+    errorTextPassword = blankString;
+  }
+
+  function clearErrorTextConfirmPassword() {
+    errorTextConfirmPassword = blankString;
+  }
+
+  //**************BUTTON-DISABLED-FLAG**************//
+
+  let isButtonEnabled =
     email &&
     password &&
     confirmPassword &&
@@ -71,6 +89,7 @@
 
   async function onSubmit(e) {
     e.preventDefault();
+
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
     let res, error;
@@ -91,22 +110,42 @@
       errorTextServer = res.message;
     }
 
-    pendingSubmit = false; //reset the request flag
+    pendingSubmit = false; //reset the request flag at the end of the promise
   }
 </script>
 
 <div class="page sign-up">
   <form on:submit={onSubmit}>
+    <p class="server-error-response">
+      {errorTextServer}
+    </p>
+
     <div class="input-container">
       <p class="input-error email">{errorTextEmail}</p>
       <label for="email">Email</label>
-      <input id="email" type="email" bind:value={email} />
+      <input
+        id="email"
+        type="email"
+        on:input={() => {
+          clearErrorTextServer(); //always clear the server message when any input is altered
+          clearErrorTextEmail();
+        }}
+        bind:value={email}
+      />
     </div>
 
     <div class="input-container">
       <p class="input-error password">{errorTextPassword}</p>
       <label for="password">Password</label>
-      <input id="password" type="password" bind:value={password} />
+      <input
+        id="password"
+        type="password"
+        on:input={() => {
+          clearErrorTextServer();
+          clearErrorTextPassword();
+        }}
+        bind:value={password}
+      />
     </div>
 
     <div class="input-container">
@@ -115,11 +154,16 @@
       <input
         id="confirm-password"
         type="password"
+        on:input={() => {
+          clearErrorTextServer();
+          clearErrorTextConfirmPassword();
+        }}
         bind:value={confirmPassword}
       />
     </div>
-    <button disabled={allValidInputs}>Sign up!</button>
+    <button type="submit" disabled={!isButtonEnabled}>Sign up!</button>
   </form>
+  <a class="page-redirect-link" href="/log-in">Existing User? Log in here!</a>
 </div>
 
 <style>

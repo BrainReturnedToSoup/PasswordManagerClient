@@ -78,7 +78,7 @@ const requestAuthState = async () => {
   return authBool;
 };
 
-const checkAuthState = async () => {
+const checkAuth = async () => {
   pendingAuthCheckStore.pendingTrue();
 
   let authState, error;
@@ -108,7 +108,7 @@ const exportsObj = {
   pendingAuthCheckStore,
   authStateStore,
   requestAuthState,
-  checkAuthState,
+  checkAuth,
 };
 
 export default exportsObj;
