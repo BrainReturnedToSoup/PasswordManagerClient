@@ -90,7 +90,8 @@ const checkAuth = async () => {
   }
 
   if (error) {
-    //most likely going to configure an error state
+    //likely going to include an auth error state
+    authStateStore.authedFalse();
   }
 
   //if no error
@@ -103,12 +104,10 @@ const checkAuth = async () => {
   pendingAuthCheckStore.pendingFalse();
 };
 
-const exportsObj = {
+export {
   firstAuthCheckStore,
   pendingAuthCheckStore,
   authStateStore,
   requestAuthState,
   checkAuth,
 };
-
-export default exportsObj;

@@ -2,11 +2,11 @@
   //*********TOOLS-HOOKS***********/
 
   import { onDestroy } from "svelte";
-  import { redirect } from "@sveltejs/kit";
+  import { goto } from "$app/navigation";
 
   //**********COMPONENTS***********/
 
-  import Loading from "../components/loading";
+  import Loading from "./loading.svelte";
 
   //**********AUTH-STATE***********/
 
@@ -50,9 +50,9 @@
   $: if (!currentAuthStoreVals.pendingAuthCheckStore) {
     //the value of this store is a boolean
     if (currentAuthStoreVals.authStateStore) {
-      redirect(200, "/home");
+      goto("/home");
     } else {
-      redirect(200, "/log-in");
+      goto("/log-in");
     }
   }
 </script>

@@ -2,11 +2,10 @@
   //*********TOOLS-HOOKS***********/
 
   import { onDestroy } from "svelte";
-  import { redirect } from "@sveltejs/kit";
-
+  import { goto } from "$app/navigation";
   //**********COMPONENTS***********/
 
-  import Loading from "../components/loading";
+  import Loading from "../loading.svelte";
   import Home from "./home.svelte";
 
   //**********AUTH-STATE***********/
@@ -16,7 +15,7 @@
     pendingAuthCheckStore,
     authStateStore,
     checkAuth,
-  } from "../lib/authState";
+  } from "../../lib/state/authState";
 
   const stores = {
     firstAuthCheckStore,
@@ -39,7 +38,7 @@
   }
 
   if (!currentAuthStoreVals.pendingAuthCheckStore) {
-    checkAuth();
+    //checkAuth();
     //async function for updating the auth state, includes managing auth related flags.
     //has its own error handling internally
   }
@@ -49,9 +48,9 @@
   //make sure the request for current auth status isn't currently pending
   $: if (
     !currentAuthStoreVals.pendingAuthCheckStore &&
-    currentAuthStoreVals.authStateStore
+    !currentAuthStoreVals.authStateStore
   ) {
-    redirect(200, "/log-in");
+    goto("/log-in");
   }
 </script>
 

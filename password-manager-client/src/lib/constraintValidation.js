@@ -1,4 +1,8 @@
 function validateEmail(email) {
+  if (!email) {
+    return "";
+  } //for upon app start up validation
+
   const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     isValidEmail = emailPattern.test(email);
 
@@ -6,10 +10,14 @@ function validateEmail(email) {
     return `Email is invalid`;
   }
 
-  return ""; //blank string for validity
+  return ""; //blank string means valid
 }
 
 function validatePassword(password) {
+  if (!password) {
+    return "";
+  }
+
   if (password.length < 12) {
     return "Password is too large. Must be between 12 and 20 characters";
   }
@@ -28,15 +36,19 @@ function validatePassword(password) {
       atleast one special character, and only letters, digits, and specialized characters`;
   }
 
-  return ""; //blank string for validity
+  return "";
 }
 
 function validateConfirmPassword(confirmPassword, password) {
+  if (!confirmPassword) {
+    return "";
+  }
+
   if (confirmPassword !== password) {
     return `Confirm password does not match password`;
   }
 
-  return ""; //blank string for validity
+  return "";
 }
 
 export { validateEmail, validatePassword, validateConfirmPassword };
