@@ -75,7 +75,7 @@
 
   //**************BUTTON-DISABLED-FLAG**************//
 
-  let isButtonEnabled =
+  $: isButtonEnabled =
     email &&
     password &&
     confirmPassword &&

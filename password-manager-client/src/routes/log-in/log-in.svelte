@@ -21,7 +21,7 @@
 
   //**************BUTTON-DISABLED-FLAG**************//
 
-  let isButtonEnabled = email && password && !errorTextServer && !pendingSubmit;
+  $: isButtonEnabled = email && password && !errorTextServer && !pendingSubmit;
 
   //*****************FORM-SUBMISSION****************//
 
@@ -33,7 +33,7 @@
     let res, error;
 
     try {
-      res = await sendLoginRequest(email, password, confirmPassword);
+      res = await sendLoginRequest(email, password);
     } catch (err) {
       error = err;
     }
@@ -61,6 +61,7 @@
         id="email"
         on:input={clearErrorTextServer}
         bind:value={email}
+        autocomplete="on"
       />
     </div>
 
@@ -71,6 +72,7 @@
         id="password"
         on:input={clearErrorTextServer}
         bind:value={password}
+        autocomplete="on"
       />
     </div>
     <button type="submit" disabled={!isButtonEnabled}>Log in!</button>

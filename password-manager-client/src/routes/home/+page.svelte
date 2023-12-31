@@ -3,6 +3,7 @@
 
   import { onDestroy } from "svelte";
   import { goto } from "$app/navigation";
+  
   //**********COMPONENTS***********/
 
   import Loading from "../loading.svelte";
@@ -38,7 +39,8 @@
   }
 
   if (!currentAuthStoreVals.pendingAuthCheckStore) {
-    //checkAuth();
+    checkAuth();
+
     //async function for updating the auth state, includes managing auth related flags.
     //has its own error handling internally
   }
@@ -48,7 +50,7 @@
   //make sure the request for current auth status isn't currently pending
   $: if (
     !currentAuthStoreVals.pendingAuthCheckStore &&
-    !currentAuthStoreVals.authStateStore
+    !currentAuthStoreVals.authStateStore //if not currently authed
   ) {
     goto("/log-in");
   }
