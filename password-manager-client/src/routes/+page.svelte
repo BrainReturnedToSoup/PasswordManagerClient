@@ -39,7 +39,6 @@
 
   if (!currentAuthStoreVals.pendingAuthCheckStore) {
     checkAuth();
-
     //async function for updating the auth state, includes managing auth related flags.
     //has its own error handling internally
   }

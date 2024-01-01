@@ -3,7 +3,7 @@
 
   import { onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  
+
   //**********COMPONENTS***********/
 
   import Loading from "../loading.svelte";

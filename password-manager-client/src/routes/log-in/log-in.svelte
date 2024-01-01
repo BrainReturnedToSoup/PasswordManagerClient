@@ -1,6 +1,5 @@
 <script>
-  import { sendLoginRequest } from "../../lib/formSubmissionHandling";
-  import { redirect } from "@sveltejs/kit";
+  import { handleLoginRequest } from "../../lib/formSubmissionHandling";
 
   //****************COMPONENT-STATE****************//
 
@@ -30,22 +29,11 @@
 
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
-    let res, error;
-
     try {
-      res = await sendLoginRequest(email, password);
-    } catch (err) {
-      error = err;
-    }
-
-    if (error) {
+      //will await the resolution of the promise for pendingSubmit flag execution order
+      await handleLoginRequest(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
+    } catch (error) {
       console.error("log-in submit error", error, error.stack);
-    } else if (res.valid) {
-      //if valid, the server already added the auth token in the cookies
-      //redirect to home automatically
-      redirect("/home");
-    } else {
-      errorTextServer = res.message;
     }
 
     pendingSubmit = false; //reset the request flag

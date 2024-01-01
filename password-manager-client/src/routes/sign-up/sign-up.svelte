@@ -7,8 +7,7 @@
     validateConfirmPassword,
   } from "../../lib/constraintValidation";
 
-  import { sendSignupRequest } from "../../lib/formSubmissionHandling";
-  import { redirect } from "@sveltejs/kit";
+  import { handleSignupRequest } from "../../lib/formSubmissionHandling";
 
   //****************COMPONENT-STATE****************//
 
@@ -92,25 +91,14 @@
 
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
-    let res, error;
-
     try {
-      res = await sendSignupRequest(email, password, confirmPassword);
-    } catch (err) {
-      error = err;
-    }
-
-    if (error) {
+      //will await the resolution of the promise for pendingSubmit flag execution order
+      await handleSignupRequest(email, password, confirmPassword); //will handle changing auth state itself, and rerouting is based purely on auth state itself
+    } catch (error) {
       console.error("sign-up submit error", error, error.stack);
-    } else if (res.valid) {
-      //if valid, the server already added the auth token in the cookies
-      //redirect to home automatically
-      redirect("/home");
-    } else {
-      errorTextServer = res.message;
     }
 
-    pendingSubmit = false; //reset the request flag at the end of the promise
+    pendingSubmit = false;
   }
 </script>
 

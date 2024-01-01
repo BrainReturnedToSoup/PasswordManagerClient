@@ -1,41 +1,74 @@
-async function sendLoginRequest(email, password) {
-  //USE BODY PARSER MIDDLEWARE ON SERVER
+import { authStateStore } from "./state/authState";
 
+async function sendFormReq(route, payload) {
   const config = {
     method: "POST",
     header: {
       "Content-Type": "application/json",
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify({ email, password }),
   };
 
-  //fetch request sends the log in info, and then sends a response
-  //to dictate client behavior. This is either a good request or a request
-  //that expresses an error flag with a message
-  const res = await fetch("/log-in", config),
+  const res = await fetch(route, config),
     parsedRes = await res.json();
 
   return parsedRes;
 }
 
-async function sendSignupRequest(email, password, confirmPassword) {
+async function handleLoginRequest(email, password) {
   //USE BODY PARSER MIDDLEWARE ON SERVER
 
-  const config = {
-    method: "POST",
-    header: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password, confirmPassword }),
-  };
+  let parsedRes, error;
 
-  //fetch request sends the sign up info, and then sends a response
-  //to dictate client behavior. This returns either a good response or a response
-  //that expresses an error flag with a message
-  const res = await fetch("/sign-up", config),
-    parsedRes = await res.json();
+  try {
+    parsedRes = await sendFormReq("/log-in", { email, password });
+  } catch (err) {
+    error = err;
+  }
 
-  return parsedRes;
+  //error with the request promise itself
+  if (error) {
+    console.error(`handleLoginRequest error`, error, error.stack);
+  }
+
+  //error flag
+  if (parsedRes.error) {
+    authStateStore.authedFalse();
+    return parsedRes.error; //should contain some sort of server error message
+  }
+
+  if (parsedRes.auth) {
+    authStateStore.authedTrue();
+  }
 }
 
-export { sendLoginRequest, sendSignupRequest };
+async function handleSignupRequest(email, password, confirmPassword) {
+  //USE BODY PARSER MIDDLEWARE ON SERVER
+
+  let parsedRes, error;
+
+  try {
+    parsedRes = await sendFormReq("/log-in", {
+      email,
+      password,
+      confirmPassword,
+    });
+  } catch (err) {
+    error = err;
+  }
+
+  if (error) {
+    console.error(`handleSignupRequest error`, error, error.stack);
+  }
+
+  if (parsedRes.error) {
+    authStateStore.authedFalse();
+    return parsedRes.error;
+  }
+
+  if (parsedRes.auth) {
+    authStateStore.authedTrue();
+  }
+}
+
+export { handleLoginRequest, handleSignupRequest };
