@@ -48,6 +48,10 @@
 
 <div class="page log-in">
   <form on:submit={onSubmit}>
+    <p class="server-error-response">
+      {errorTextServer}
+    </p>
+
     <div class="input-container">
       <label for="email">Email</label>
       <input
@@ -56,6 +60,7 @@
         on:input={clearErrorTextServer}
         bind:value={email}
         autocomplete="on"
+        disabled={pendingSubmit}
       />
     </div>
 
@@ -67,6 +72,7 @@
         on:input={clearErrorTextServer}
         bind:value={password}
         autocomplete="on"
+        disabled={pendingSubmit}
       />
     </div>
     <button type="submit" disabled={!isButtonEnabled}>Log in!</button>

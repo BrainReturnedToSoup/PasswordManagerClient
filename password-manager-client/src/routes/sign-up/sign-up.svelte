@@ -125,6 +125,7 @@
           clearErrorTextEmail();
         }}
         bind:value={email}
+        disabled={pendingSubmit}
       />
     </div>
 
@@ -139,6 +140,7 @@
           clearErrorTextPassword();
         }}
         bind:value={password}
+        disabled={pendingSubmit}
       />
     </div>
 
@@ -153,6 +155,7 @@
           clearErrorTextConfirmPassword();
         }}
         bind:value={confirmPassword}
+        disabled={pendingSubmit}
       />
     </div>
     <button type="submit" disabled={!isButtonEnabled}>Sign up!</button>
