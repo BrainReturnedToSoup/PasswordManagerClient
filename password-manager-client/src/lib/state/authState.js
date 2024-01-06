@@ -73,37 +73,33 @@ const firstAuthCheckStore = create_firstAuthCheckStore(),
 //properly authed, and false if not
 const requestAuthState = async () => {
   const res = await fetch("/auth-state"),
-    authStateBool = await res.json().auth;
+    parsedRes = await res.json();
 
-  return authStateBool;
+  const authBool = parsedRes.auth;
+
+  return authBool;
 };
 
 const checkAuth = async () => {
   pendingAuthCheckStore.pendingTrue();
 
-  let authStateBool, error;
+  (async () => {
+    try {
+      const authStateBool = await requestAuthState();
 
-  try {
-    authStateBool = await requestAuthState();
-  } catch (err) {
-    error = err;
-  }
-
-  if (error) {
-    //likely going to include an auth error state
-    console.log("checkAuth Request Error", error, error.stack);
-
-    authStateStore.authedFalse();
-  }
-
-  //if no error
-  else if (authStateBool) {
-    authStateStore.authedTrue();
-  } else {
-    authStateStore.authedFalse();
-  }
-
-  pendingAuthCheckStore.pendingFalse();
+      if (authStateBool) {
+        authStateStore.authedTrue();
+      } else {
+        authStateStore.authedFalse();
+      }
+    } catch (error) {
+      // Handle the error (likely including an auth error state)
+      console.log("checkAuth Request Error", error, error.stack);
+      authStateStore.authedFalse();
+    } finally {
+      pendingAuthCheckStore.pendingFalse();
+    }
+  })();
 };
 
 export {

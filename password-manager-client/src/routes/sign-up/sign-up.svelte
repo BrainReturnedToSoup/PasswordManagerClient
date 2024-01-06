@@ -91,11 +91,17 @@
 
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
+    let reqError;
+
     try {
       //will await the resolution of the promise for pendingSubmit flag execution order
-      await handleSignupRequest(email, password, confirmPassword); //will handle changing auth state itself, and rerouting is based purely on auth state itself
-    } catch (error) {
-      console.error("sign-up submit error", error, error.stack);
+      reqError = await handleSignupRequest(email, password, confirmPassword); //will handle changing auth state itself, and rerouting is based purely on auth state itself
+    } catch (err) {
+      console.error("sign-up submit error", err, err.stack);
+    }
+
+    if (reqError) {
+      errorTextServer = reqError;
     }
 
     pendingSubmit = false;

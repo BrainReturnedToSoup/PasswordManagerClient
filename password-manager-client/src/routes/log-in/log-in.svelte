@@ -29,11 +29,17 @@
 
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
+    let reqError;
+
     try {
       //will await the resolution of the promise for pendingSubmit flag execution order
-      await handleLoginRequest(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
+      reqError = await handleLoginRequest(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
     } catch (error) {
       console.error("log-in submit error", error, error.stack);
+    }
+
+    if (reqError) {
+      errorTextServer = reqError;
     }
 
     pendingSubmit = false; //reset the request flag

@@ -3,10 +3,10 @@ import { authStateStore } from "./state/authState";
 async function sendFormReq(route, payload) {
   const config = {
     method: "POST",
-    header: {
+    headers: {
       "Content-Type": "application/json",
-      body: JSON.stringify(payload),
     },
+    body: JSON.stringify(payload),
   };
 
   const res = await fetch(route, config),
@@ -48,7 +48,7 @@ async function handleSignupRequest(email, password, confirmPassword) {
   let parsedRes, error;
 
   try {
-    parsedRes = await sendFormReq("/log-in", {
+    parsedRes = await sendFormReq("/sign-up", {
       email,
       password,
       confirmPassword,
