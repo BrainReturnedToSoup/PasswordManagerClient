@@ -40,8 +40,40 @@ const create_localAuthStateStore = () => {
   };
 };
 
+const create_currAuthEmailCensoredStore = () => {
+  const { subscribe, set } = writable("");
+
+  return {
+    subscribe,
+    //for the already censored email in a auth-related response,
+    //which includes form submissions and general auth checks
+    setEmail: (censoredEmail) => {
+      set(censoredEmail);
+    },
+    clearEmail: () => {
+      set("");
+    },
+  };
+};
+
+const create_onFormAuthRedirectStore = () => {
+  const { subscribe, set } = writable(false);
+
+  return {
+    subscribe,
+    true: () => {
+      set(true);
+    },
+    false: () => {
+      set(false);
+    },
+  };
+};
+
 const pendingAuthCheckStore = create_pendingAuthCheckStore(),
-  authStateStore = create_localAuthStateStore();
+  authStateStore = create_localAuthStateStore(),
+  currAuthEmailCensoredStore = create_currAuthEmailCensoredStore(),
+  onFormAuthRedirectStore = create_onFormAuthRedirectStore(); //for preventing redundant auth check request on the home page if authed through login/signup
 
 //common interface for fetching the auth state of the user,
 //which depends on httpOnly cookies being checked in the req
@@ -53,29 +85,38 @@ const requestAuthState = async () => {
   const res = await fetch("/auth-state"),
     parsedRes = await res.json();
 
-  const authBool = parsedRes.auth;
-
-  return authBool;
+  return parsedRes;
 };
 
 const checkAuth = async () => {
   pendingAuthCheckStore.pendingTrue();
 
   try {
-    const authStateBool = await requestAuthState();
+    const authStateObj = await requestAuthState();
 
-    if (authStateBool) {
+    if (authStateObj.auth) {
       authStateStore.authedTrue();
+      currAuthEmailCensoredStore.setEmail(authStateObj.email); //for the profile UI feature on the home page
     } else {
       authStateStore.authedFalse();
+      currAuthEmailCensoredStore.clearEmail();
     }
   } catch (error) {
     // Handle the error (likely including an auth error state)
     console.log("checkAuth Request Error", error, error.stack);
+
     authStateStore.authedFalse();
-  } finally {
-    pendingAuthCheckStore.pendingFalse();
+    currAuthEmailCensoredStore.clearEmail();
   }
+
+  pendingAuthCheckStore.pendingFalse();
 };
 
-export { pendingAuthCheckStore, authStateStore, requestAuthState, checkAuth };
+export {
+  pendingAuthCheckStore,
+  authStateStore,
+  currAuthEmailCensoredStore,
+  onFormAuthRedirectStore,
+  requestAuthState,
+  checkAuth,
+};

@@ -15,11 +15,13 @@
     pendingAuthCheckStore,
     authStateStore,
     checkAuth,
+    onFormAuthRedirectStore,
   } from "../../lib/state/authState";
 
   const stores = {
     pendingAuthCheckStore,
     authStateStore,
+    onFormAuthRedirectStore,
   }; //for property name reuse
 
   const subscriptions = {};
@@ -36,12 +38,19 @@
     onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
   }
 
-  if (!currentAuthStoreVals.pendingAuthCheckStore) {
-    checkAuth();
-
+  if (
+    !currentAuthStoreVals.pendingAuthCheckStore &&
+    !currentAuthStoreVals.onFormAuthRedirectStore
+  ) {
     //async function for updating the auth state, includes managing auth related flags.
-    //has its own error handling internally
+    //has its own error handling internally.
+    checkAuth();
   }
+
+  //always set this to false after the 'checkAuth' condition, as it is used to
+  //prevent redundant auth checks for situations where you are redirecting to home
+  //from a login/signup form submission which already validated your auth status
+  stores.onFormAuthRedirectStore.false();
 
   //**********AUTH-BASED-ROUTING************/
 

@@ -1,4 +1,8 @@
-import { authStateStore } from "./state/authState";
+import {
+  authStateStore,
+  onFormAuthRedirectStore,
+  currAuthEmailCensoredStore,
+} from "./state/authState";
 
 async function sendFormReq(route, payload) {
   const config = {
@@ -34,11 +38,16 @@ async function handleLoginRequest(email, password) {
   //error flag
   if (parsedRes.error) {
     authStateStore.authedFalse();
+    currAuthEmailCensoredStore.clearEmail();
+    onFormAuthRedirectStore.false();
+
     return parsedRes.error; //should contain some sort of server error message
   }
 
   if (parsedRes.auth) {
     authStateStore.authedTrue();
+    currAuthEmailCensoredStore.setEmail(parsedRes.email);
+    onFormAuthRedirectStore.true();
   }
 }
 
@@ -63,11 +72,16 @@ async function handleSignupRequest(email, password, confirmPassword) {
 
   if (parsedRes.error) {
     authStateStore.authedFalse();
+    currAuthEmailCensoredStore.clearEmail();
+    onFormAuthRedirectStore.false();
+
     return parsedRes.error;
   }
 
   if (parsedRes.auth) {
     authStateStore.authedTrue();
+    currAuthEmailCensoredStore.setEmail(parsedRes.email);
+    onFormAuthRedirectStore.true();
   }
 }
 

@@ -1,11 +1,6 @@
 <script>
   import { handleLoginRequest } from "../../lib/formSubmissionHandling";
 
-  //****************COMPONENT-STATE****************//
-
-  let email, password;
-  let pendingSubmit = false;
-
   //*********************MISC***********************/
 
   const blankString = "";
@@ -18,11 +13,10 @@
     errorTextServer = blankString;
   }
 
-  //**************BUTTON-DISABLED-FLAG**************//
-
-  $: isButtonEnabled = email && password && !errorTextServer && !pendingSubmit;
-
   //*****************FORM-SUBMISSION****************//
+
+  let email, password;
+  let pendingSubmit = false;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -44,6 +38,10 @@
 
     pendingSubmit = false; //reset the request flag
   }
+
+  //**************BUTTON-DISABLED-FLAG**************//
+
+  $: isButtonEnabled = email && password && !errorTextServer && !pendingSubmit;
 </script>
 
 <div class="page log-in">
