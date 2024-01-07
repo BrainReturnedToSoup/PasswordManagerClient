@@ -11,14 +11,12 @@
   //**********AUTH-STATE***********/
 
   import {
-    firstAuthCheckStore,
     pendingAuthCheckStore,
     authStateStore,
     checkAuth,
   } from "../lib/state/authState";
 
   const stores = {
-    firstAuthCheckStore,
     pendingAuthCheckStore,
     authStateStore,
   }; //for property name reuse

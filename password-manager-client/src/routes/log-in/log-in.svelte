@@ -47,7 +47,7 @@
 </script>
 
 <div class="page log-in">
-  <form on:submit={onSubmit}>
+  <form on:submit={onSubmit} novalidate>
     <p class="server-error-response">
       {errorTextServer}
     </p>
@@ -61,6 +61,7 @@
         bind:value={email}
         autocomplete="on"
         disabled={pendingSubmit}
+        required
       />
     </div>
 
@@ -73,6 +74,7 @@
         bind:value={password}
         autocomplete="on"
         disabled={pendingSubmit}
+        required
       />
     </div>
     <button type="submit" disabled={!isButtonEnabled}>Log in!</button>

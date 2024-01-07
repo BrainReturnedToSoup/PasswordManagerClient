@@ -3,27 +3,6 @@ import { writable } from "svelte/store";
 //used to keep track of whether the app has made a request to check the current
 //auth status of the user. This is important for determining routing behaviors.
 
-//a flag used to help determine when to send out
-//future auth state checks. Upon receiving the app
-//this is immediately checked, but perhaps such may
-//be checked when navigating through the routes
-const create_firstAuthCheckStore = () => {
-  const { subscribe, set } = writable(false);
-
-  return {
-    subscribe,
-    checkTrue: () => {
-      set(true);
-    },
-    checkFalse: () => {
-      set(false);
-    },
-    reset: () => {
-      set(false);
-    },
-  };
-};
-
 //for specific conditions such as for creating conditional loading screens
 //while the auth state promise is pending
 const create_pendingAuthCheckStore = () => {
@@ -61,8 +40,7 @@ const create_localAuthStateStore = () => {
   };
 };
 
-const firstAuthCheckStore = create_firstAuthCheckStore(),
-  pendingAuthCheckStore = create_pendingAuthCheckStore(),
+const pendingAuthCheckStore = create_pendingAuthCheckStore(),
   authStateStore = create_localAuthStateStore();
 
 //common interface for fetching the auth state of the user,
@@ -83,29 +61,21 @@ const requestAuthState = async () => {
 const checkAuth = async () => {
   pendingAuthCheckStore.pendingTrue();
 
-  (async () => {
-    try {
-      const authStateBool = await requestAuthState();
+  try {
+    const authStateBool = await requestAuthState();
 
-      if (authStateBool) {
-        authStateStore.authedTrue();
-      } else {
-        authStateStore.authedFalse();
-      }
-    } catch (error) {
-      // Handle the error (likely including an auth error state)
-      console.log("checkAuth Request Error", error, error.stack);
+    if (authStateBool) {
+      authStateStore.authedTrue();
+    } else {
       authStateStore.authedFalse();
-    } finally {
-      pendingAuthCheckStore.pendingFalse();
     }
-  })();
+  } catch (error) {
+    // Handle the error (likely including an auth error state)
+    console.log("checkAuth Request Error", error, error.stack);
+    authStateStore.authedFalse();
+  } finally {
+    pendingAuthCheckStore.pendingFalse();
+  }
 };
 
-export {
-  firstAuthCheckStore,
-  pendingAuthCheckStore,
-  authStateStore,
-  requestAuthState,
-  checkAuth,
-};
+export { pendingAuthCheckStore, authStateStore, requestAuthState, checkAuth };

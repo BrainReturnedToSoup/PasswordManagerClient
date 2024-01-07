@@ -109,7 +109,7 @@
 </script>
 
 <div class="page sign-up">
-  <form on:submit={onSubmit}>
+  <form on:submit={onSubmit} novalidate>
     <p class="server-error-response">
       {errorTextServer}
     </p>
@@ -126,6 +126,7 @@
         }}
         bind:value={email}
         disabled={pendingSubmit}
+        required
       />
     </div>
 
@@ -141,6 +142,7 @@
         }}
         bind:value={password}
         disabled={pendingSubmit}
+        required
       />
     </div>
 
@@ -156,6 +158,7 @@
         }}
         bind:value={confirmPassword}
         disabled={pendingSubmit}
+        required
       />
     </div>
     <button type="submit" disabled={!isButtonEnabled}>Sign up!</button>
