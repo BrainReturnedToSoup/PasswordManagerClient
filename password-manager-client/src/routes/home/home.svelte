@@ -4,18 +4,42 @@
   import Credentials from "./credentials/credentials.svelte";
   import Settings from "./settings/settings.svelte";
 
-  //*************STATE*************/
+  //*********CENSORED-EMAIL********/
 
-  //********PAGE*FOCUS*APIs*********/
+  import { currAuthEmailCensoredStore } from "../../lib/state/authState";
+  import { onDestroy } from "svelte";
 
-  //define the focus of the home page corresponding to the selected
-  //navigation button. The focus will change the content that exists
-  //main based on what is selected. The nav bar should stay no matter the
-  //specific focus state.
+  let censoredEmail = "";
 
-  //*********LOG-OUT-REQUEST********/
+  const censoredEmailSubscription = currAuthEmailCensoredStore.subscribe(
+    (state) => {
+      censoredEmail = state;
+    }
+  );
 
-  //just for handling a simple logout request
+  onDestroy(censoredEmailSubscription);
+
+  //**********PAGE*FOCUS***********/
+
+  import { primaryFocusEnums, secondaryFocusEnums } from "./pageFocusEnums";
+
+  let primaryFocus = primaryFocusEnums.credentials,
+    secondaryFocus = secondaryFocusEnums.credentials.main;
+
+  function setFocus(primary, secondary) {
+    if (
+      primary in primaryFocusEnums &&
+      secondary in secondaryFocusEnums[primary]
+    ) {
+      primaryFocus = primary;
+      secondaryFocus = secondary;
+    } else {
+      primaryFocus = primaryFocusEnums.credentials;
+      secondaryFocus = secondaryFocusEnums.credentials.main;
+    }
+  }
+
+  //***********LOG-OUT-REQUEST*********/
 
   function handleLogout() {}
 </script>
@@ -23,9 +47,7 @@
 <div class="page home">
   <nav>
     <div class="profile container">
-      <h1 class="email-censored"></h1>
-      //will contain the value stored in the censored email store just for UI
-      touches
+      <h1 class="censored-email">{censoredEmail}</h1>
       <button
         class="log-out"
         on::click={() => {
@@ -38,28 +60,41 @@
       <button
         class="credentials-main button"
         on::click={() => {
-          credentialsFocus(secondaryFocusEnums.credentialsMain);
-        }}>Back to credentials</button
+          setFocus(
+            primaryFocusEnums.credentials,
+            secondaryFocusEnums.credentials.main
+          );
+        }}>Back to main</button
       >
     </div>
 
     <div class="settings container button">
+      <h1 class="settings header">Settings</h1>
       <button
         class="settings account"
         on::click={() => {
-          settingsFocus(secondaryFocusEnums.settingsAccount);
+          setFocus(
+            primaryFocusEnums.settings,
+            secondaryFocusEnums.settings.account
+          );
         }}>Account</button
       >
       <button
         class="settings preferences button"
         on::click={() => {
-          settingsFocus(secondaryFocusEnums.settingsPreferences);
+          setFocus(
+            primaryFocusEnums.settings,
+            secondaryFocusEnums.settings.preferences
+          );
         }}>Preferences</button
       >
       <button
         class="settings faq button"
         on::click={() => {
-          settingsFocus(secondaryFocusEnums.settingsFaq);
+          setFocus(
+            primaryFocusEnums.settings,
+            secondaryFocusEnums.settings.faq
+          );
         }}>FAQ</button
       >
     </div>
@@ -68,16 +103,19 @@
       <button
         class="credentials-creator button"
         on::click={() => {
-          credentialsFocus(secondaryFocusEnums.credentialsCreator);
-        }}>Add new credentials</button
+          setFocus(
+            primaryFocusEnums.credentials,
+            secondaryFocusEnums.credentials.creator
+          );
+        }}>Add new credentials +</button
       >
     </div>
   </nav>
   <main>
-    {#if currentStoreVals.homePageFocusStore.main == mainFocusEnums.credentials}
-      <Credentials secondary={currentStoreVals.homePageFocusStore.secondary} />
-    {:else if currentStoreVals.homePageFocusStore.secondary == mainFocusEnums.settings}
-      <Settings secondary={currentStoreVals.homePageFocusStore.secondary} />
+    {#if primaryFocus === primaryFocusEnums.credentials}
+      <Credentials {secondaryFocus} />
+    {:else if primaryFocus === primaryFocusEnums.settings}
+      <Settings {secondaryFocus} />
     {/if}
   </main>
 </div>

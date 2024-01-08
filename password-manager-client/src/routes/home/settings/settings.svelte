@@ -1,5 +1,8 @@
 <script>
-  export let secondary;
+  //**********PROPS***********/
+  export let secondaryFocus;
+
+  import { secondaryFocusEnums } from ".././pageFocusEnums";
 </script>
 
 <div class="settings container"></div>
