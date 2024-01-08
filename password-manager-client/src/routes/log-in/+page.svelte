@@ -15,11 +15,13 @@
     pendingAuthCheckStore,
     authStateStore,
     checkAuth,
+    redirectToLoginStore,
   } from "../../lib/state/authState";
 
   const stores = {
     pendingAuthCheckStore,
     authStateStore,
+    redirectToLoginStore,
   }; //for property name reuse
 
   const subscriptions = {};
@@ -36,12 +38,20 @@
     onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
   }
 
-  if (!currentAuthStoreVals.pendingAuthCheckStore) {
+  if (
+    !currentAuthStoreVals.pendingAuthCheckStore &&
+    !currentAuthStoreVals.redirectToLoginStore
+  ) {
     checkAuth();
 
     //async function for updating the auth state, includes managing auth related flags.
     //has its own error handling internally
   }
+
+  //always set this to false after the 'checkAuth' condition, as it is used to
+  //prevent redundant auth checks for situations where you are redirecting from /home
+  //from an explicit logout by the user
+  stores.redirectToLoginStore.false();
 
   //**********AUTH-BASED-ROUTING************/
 

@@ -56,7 +56,21 @@ const create_currAuthEmailCensoredStore = () => {
   };
 };
 
-const create_onFormAuthRedirectStore = () => {
+const create_redirectToHomeStore = () => {
+  const { subscribe, set } = writable(false);
+
+  return {
+    subscribe,
+    true: () => {
+      set(true);
+    },
+    false: () => {
+      set(false);
+    },
+  };
+};
+
+const create_redirectToLoginStore = () => {
   const { subscribe, set } = writable(false);
 
   return {
@@ -72,8 +86,10 @@ const create_onFormAuthRedirectStore = () => {
 
 const pendingAuthCheckStore = create_pendingAuthCheckStore(),
   authStateStore = create_localAuthStateStore(),
-  currAuthEmailCensoredStore = create_currAuthEmailCensoredStore(),
-  onFormAuthRedirectStore = create_onFormAuthRedirectStore(); //for preventing redundant auth check request on the home page if authed through login/signup
+  currAuthEmailCensoredStore = create_currAuthEmailCensoredStore();
+
+const redirectToHomeStore = create_redirectToHomeStore(), //for preventing redundant auth check request on the home page if authed through login/signup
+  redirectToLoginStore = create_redirectToLoginStore(); //for preventing redundant auth check request on the login page based on a logout redirect
 
 //common interface for fetching the auth state of the user,
 //which depends on httpOnly cookies being checked in the req
@@ -116,7 +132,8 @@ export {
   pendingAuthCheckStore,
   authStateStore,
   currAuthEmailCensoredStore,
-  onFormAuthRedirectStore,
+  redirectToHomeStore,
+  redirectToLoginStore,
   requestAuthState,
   checkAuth,
 };

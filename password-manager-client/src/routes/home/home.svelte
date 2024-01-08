@@ -4,12 +4,17 @@
   import Credentials from "./credentials/credentials.svelte";
   import Settings from "./settings/settings.svelte";
 
+  //********ERROR-MESSAGES*********/
+
+  const blankString = "";
+  let errorMessage = blankString;
+
   //*********CENSORED-EMAIL********/
 
   import { currAuthEmailCensoredStore } from "../../lib/state/authState";
   import { onDestroy } from "svelte";
 
-  let censoredEmail = "";
+  let censoredEmail = blankString;
 
   const censoredEmailSubscription = currAuthEmailCensoredStore.subscribe(
     (state) => {
@@ -31,6 +36,7 @@
       primary in primaryFocusEnums &&
       secondary in secondaryFocusEnums[primary]
     ) {
+      //only if both arguments are valid values to use
       primaryFocus = primary;
       secondaryFocus = secondary;
     } else {
@@ -39,12 +45,63 @@
     }
   }
 
-  //***********LOG-OUT-REQUEST*********/
+  //************LOG-OUT*************/
 
-  function handleLogout() {}
+  import {
+    authStateStore,
+    redirectToLoginStore,
+  } from "../../lib/state/authState";
+
+  const twoSecondDelay = 2000;
+  let pendingLogout = false,
+    logoutError = false;
+
+  function logoutErrorDelay() {
+    logoutError = true;
+    setTimeout(() => {
+      logoutError = false;
+    }, twoSecondDelay);
+  }
+
+  async function handleLogout() {
+    pendingLogout = true;
+
+    let logoutResult, error;
+
+    try {
+      logoutResult = await fetch("/log-out", { method: "POST" });
+    } catch (err) {
+      error = err;
+    }
+
+    if (error) {
+      console.error("handleLogout: ", error, error.stack);
+      errorMessage = `Fatal ${error}`;
+      logoutErrorDelay();
+    } else if (logoutResult.success) {
+      errorMessage = blankString;
+      authStateStore.authedFalse();
+      redirectToLoginStore.true();
+      //will have logged out thus you don't want to make a redundant
+      //auth check on the login page when it mounts
+    } else {
+      errorMessage = logoutResult.error;
+      logoutErrorDelay();
+    }
+
+    pendingLogout = false;
+  }
 </script>
 
 <div class="page home">
+  <div class="error-message container">
+    {#if errorMessage}
+      <p class="error-message">
+        {errorMessage}
+      </p>
+    {/if}
+  </div>
+
   <nav>
     <div class="profile container">
       <h1 class="censored-email">{censoredEmail}</h1>
@@ -52,7 +109,8 @@
         class="log-out"
         on::click={() => {
           handleLogout();
-        }}>Log out</button
+        }}
+        disabled={pendingLogout || logoutError}>Log out</button
       >
     </div>
 
@@ -64,7 +122,8 @@
             primaryFocusEnums.credentials,
             secondaryFocusEnums.credentials.main
           );
-        }}>Back to main</button
+        }}
+        disabled={pendingLogout}>Back to main</button
       >
     </div>
 
@@ -77,7 +136,8 @@
             primaryFocusEnums.settings,
             secondaryFocusEnums.settings.account
           );
-        }}>Account</button
+        }}
+        disabled={pendingLogout}>Account</button
       >
       <button
         class="settings preferences button"
@@ -86,7 +146,8 @@
             primaryFocusEnums.settings,
             secondaryFocusEnums.settings.preferences
           );
-        }}>Preferences</button
+        }}
+        disabled={pendingLogout}>Preferences</button
       >
       <button
         class="settings faq button"
@@ -95,7 +156,8 @@
             primaryFocusEnums.settings,
             secondaryFocusEnums.settings.faq
           );
-        }}>FAQ</button
+        }}
+        disabled={pendingLogout}>FAQ</button
       >
     </div>
 
@@ -107,15 +169,16 @@
             primaryFocusEnums.credentials,
             secondaryFocusEnums.credentials.creator
           );
-        }}>Add new credentials +</button
+        }}
+        disabled={pendingLogout}>Add new credentials +</button
       >
     </div>
   </nav>
   <main>
     {#if primaryFocus === primaryFocusEnums.credentials}
-      <Credentials {secondaryFocus} />
+      <Credentials {secondaryFocus} {pendingLogout} />
     {:else if primaryFocus === primaryFocusEnums.settings}
-      <Settings {secondaryFocus} />
+      <Settings {secondaryFocus} {pendingLogout} />
     {/if}
   </main>
 </div>

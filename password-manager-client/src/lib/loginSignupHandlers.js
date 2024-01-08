@@ -1,6 +1,6 @@
 import {
   authStateStore,
-  onFormAuthRedirectStore,
+  redirectToHomeStore,
   currAuthEmailCensoredStore,
 } from "./state/authState";
 
@@ -22,10 +22,10 @@ async function sendFormReq(route, payload) {
 async function handleLoginRequest(email, password) {
   //USE BODY PARSER MIDDLEWARE ON SERVER
 
-  let parsedRes, error;
+  let loginResult, error;
 
   try {
-    parsedRes = await sendFormReq("/log-in", { email, password });
+    loginResult = await sendFormReq("/log-in", { email, password });
   } catch (err) {
     error = err;
   }
@@ -36,28 +36,28 @@ async function handleLoginRequest(email, password) {
   }
 
   //error flag
-  if (parsedRes.error) {
+  if (loginResult.error) {
     authStateStore.authedFalse();
     currAuthEmailCensoredStore.clearEmail();
-    onFormAuthRedirectStore.false();
+    redirectToHomeStore.false();
 
-    return parsedRes.error; //should contain some sort of server error message
+    return loginResult.error; //should contain some sort of server error message
   }
 
-  if (parsedRes.auth) {
+  if (loginResult.success) {
     authStateStore.authedTrue();
-    currAuthEmailCensoredStore.setEmail(parsedRes.email);
-    onFormAuthRedirectStore.true();
+    currAuthEmailCensoredStore.setEmail(loginResult.email);
+    redirectToHomeStore.true();
   }
 }
 
 async function handleSignupRequest(email, password, confirmPassword) {
   //USE BODY PARSER MIDDLEWARE ON SERVER
 
-  let parsedRes, error;
+  let signupResult, error;
 
   try {
-    parsedRes = await sendFormReq("/sign-up", {
+    signupResult = await sendFormReq("/sign-up", {
       email,
       password,
       confirmPassword,
@@ -70,18 +70,18 @@ async function handleSignupRequest(email, password, confirmPassword) {
     console.error(`handleSignupRequest error`, error, error.stack);
   }
 
-  if (parsedRes.error) {
+  if (signupResult.error) {
     authStateStore.authedFalse();
     currAuthEmailCensoredStore.clearEmail();
-    onFormAuthRedirectStore.false();
+    redirectToHomeStore.false();
 
-    return parsedRes.error;
+    return signupResult.error;
   }
 
-  if (parsedRes.auth) {
+  if (signupResult.success) {
     authStateStore.authedTrue();
-    currAuthEmailCensoredStore.setEmail(parsedRes.email);
-    onFormAuthRedirectStore.true();
+    currAuthEmailCensoredStore.setEmail(signupResult.email);
+    redirectToHomeStore.true();
   }
 }
 

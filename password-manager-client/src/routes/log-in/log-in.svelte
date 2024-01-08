@@ -1,5 +1,5 @@
 <script>
-  import { handleLoginRequest } from "../../lib/formSubmissionHandling";
+  import { handleLoginRequest } from "../../lib/loginSignupHandlers";
 
   //*********************MISC***********************/
 

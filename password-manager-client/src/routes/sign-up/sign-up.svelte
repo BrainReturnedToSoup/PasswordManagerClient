@@ -7,7 +7,7 @@
     validateConfirmPassword,
   } from "../../lib/constraintValidation";
 
-  import { handleSignupRequest } from "../../lib/formSubmissionHandling";
+  import { handleSignupRequest } from "../../lib/loginSignupHandlers";
 
   //****************COMPONENT-STATE****************//
 
