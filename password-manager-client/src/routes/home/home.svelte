@@ -26,6 +26,9 @@
 
   //**********PAGE*FOCUS***********/
 
+  //page focus represents what is displayed as the main content corresponding
+  //to the selected nav bar option
+
   import { primaryFocusEnums, secondaryFocusEnums } from "./pageFocusEnums";
 
   let primaryFocus = primaryFocusEnums.credentials,
@@ -56,7 +59,7 @@
   let pendingLogout = false,
     logoutError = false;
 
-  function logoutErrorDelay() {
+  function logoutErrorFlagReset() {
     logoutError = true;
     setTimeout(() => {
       logoutError = false;
@@ -77,7 +80,7 @@
     if (error) {
       console.error("handleLogout: ", error, error.stack);
       errorMessage = `Fatal ${error}`;
-      logoutErrorDelay();
+      logoutErrorFlagReset();
     } else if (logoutResult.success) {
       errorMessage = blankString;
       authStateStore.authedFalse();
@@ -86,7 +89,7 @@
       //auth check on the login page when it mounts
     } else {
       errorMessage = logoutResult.error;
-      logoutErrorDelay();
+      logoutErrorFlagReset();
     }
 
     pendingLogout = false;
@@ -170,7 +173,7 @@
             secondaryFocusEnums.credentials.creator
           );
         }}
-        disabled={pendingLogout}>Add new credentials +</button
+        disabled={pendingLogout}>New Credentials+</button
       >
     </div>
   </nav>

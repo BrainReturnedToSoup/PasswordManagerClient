@@ -57,8 +57,9 @@
   //make sure the request for current auth status isn't currently pending
   $: if (
     !currentAuthStoreVals.pendingAuthCheckStore &&
-    !currentAuthStoreVals.authStateStore //if not currently authed
+    !currentAuthStoreVals.authStateStore
   ) {
+    //will check condition each time the above dependencies change in value
     goto("/log-in");
   }
 </script>

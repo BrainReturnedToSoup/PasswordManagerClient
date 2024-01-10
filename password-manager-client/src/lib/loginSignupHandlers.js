@@ -31,17 +31,16 @@ async function handleLoginRequest(email, password) {
   }
 
   //error with the request promise itself
-  if (error) {
+  if (error || loginResult.error) {
     console.error(`handleLoginRequest error`, error, error.stack);
-  }
 
-  //error flag
-  if (loginResult.error) {
     authStateStore.authedFalse();
     currAuthEmailCensoredStore.clearEmail();
     redirectToHomeStore.false();
+  }
 
-    return loginResult.error; //should contain some sort of server error message
+  if (loginResult.error) {
+    return loginResult.error; //take the error value and display such on the UI
   }
 
   if (loginResult.success) {
@@ -66,16 +65,16 @@ async function handleSignupRequest(email, password, confirmPassword) {
     error = err;
   }
 
-  if (error) {
+  if (error || signupResult.error) {
     console.error(`handleSignupRequest error`, error, error.stack);
-  }
 
-  if (signupResult.error) {
     authStateStore.authedFalse();
     currAuthEmailCensoredStore.clearEmail();
     redirectToHomeStore.false();
+  }
 
-    return signupResult.error;
+  if (signupResult.error) {
+    return signupResult.error; //take the error value and display such on the UI
   }
 
   if (signupResult.success) {
