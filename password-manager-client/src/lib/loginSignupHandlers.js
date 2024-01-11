@@ -31,7 +31,7 @@ async function handleLoginRequest(email, password) {
   }
 
   //error with the request promise itself
-  if (error || loginResult.error) {
+  if (error) {
     console.error(`handleLoginRequest error`, error, error.stack);
 
     authStateStore.authedFalse();
@@ -40,6 +40,9 @@ async function handleLoginRequest(email, password) {
   }
 
   if (loginResult.error) {
+    authStateStore.authedFalse();
+    currAuthEmailCensoredStore.clearEmail();
+    redirectToHomeStore.false();
     return loginResult.error; //take the error value and display such on the UI
   }
 
@@ -65,7 +68,7 @@ async function handleSignupRequest(email, password, confirmPassword) {
     error = err;
   }
 
-  if (error || signupResult.error) {
+  if (error) {
     console.error(`handleSignupRequest error`, error, error.stack);
 
     authStateStore.authedFalse();
@@ -74,6 +77,9 @@ async function handleSignupRequest(email, password, confirmPassword) {
   }
 
   if (signupResult.error) {
+    authStateStore.authedFalse();
+    currAuthEmailCensoredStore.clearEmail();
+    redirectToHomeStore.false();
     return signupResult.error; //take the error value and display such on the UI
   }
 

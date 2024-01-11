@@ -64,8 +64,9 @@
   }
 </script>
 
-{#if currentAuthStoreVals.pendingAuthCheckStore}
-  <Loading />
-{:else if !currentAuthStoreVals.pendingAuthCheckStore && currentAuthStoreVals.localAuthStateStore}
+<div>this works</div>
+{#if !currentAuthStoreVals.pendingAuthCheckStore && currentAuthStoreVals.authStateStore}
   <Home />
+{:else}
+  <Loading />
 {/if}

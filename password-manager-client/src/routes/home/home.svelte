@@ -72,7 +72,10 @@
     let logoutResult, error;
 
     try {
-      logoutResult = await fetch("/log-out", { method: "POST" });
+      //will delete the session associated with the supplied cookie,
+      //clear the jwt cookie, and send a sucess flag
+      const res = await fetch("/log-out", { method: "POST" });
+      logoutResult = await res.json();
     } catch (err) {
       error = err;
     }
@@ -110,7 +113,7 @@
       <h1 class="censored-email">{censoredEmail}</h1>
       <button
         class="log-out"
-        on::click={() => {
+        on:click={() => {
           handleLogout();
         }}
         disabled={pendingLogout || logoutError}>Log out</button
@@ -120,7 +123,7 @@
     <div class="credentials-main container">
       <button
         class="credentials-main button"
-        on::click={() => {
+        on:click={() => {
           setFocus(
             primaryFocusEnums.credentials,
             secondaryFocusEnums.credentials.main
@@ -130,11 +133,24 @@
       >
     </div>
 
+    <div class="credentials-creator container">
+      <button
+        class="credentials-creator button"
+        on:click={() => {
+          setFocus(
+            primaryFocusEnums.credentials,
+            secondaryFocusEnums.credentials.creator
+          );
+        }}
+        disabled={pendingLogout}>New Credentials+</button
+      >
+    </div>
+
     <div class="settings container button">
       <h1 class="settings header">Settings</h1>
       <button
         class="settings account"
-        on::click={() => {
+        on:click={() => {
           setFocus(
             primaryFocusEnums.settings,
             secondaryFocusEnums.settings.account
@@ -144,7 +160,7 @@
       >
       <button
         class="settings preferences button"
-        on::click={() => {
+        on:click={() => {
           setFocus(
             primaryFocusEnums.settings,
             secondaryFocusEnums.settings.preferences
@@ -154,26 +170,13 @@
       >
       <button
         class="settings faq button"
-        on::click={() => {
+        on:click={() => {
           setFocus(
             primaryFocusEnums.settings,
             secondaryFocusEnums.settings.faq
           );
         }}
         disabled={pendingLogout}>FAQ</button
-      >
-    </div>
-
-    <div class="credentials-creator container">
-      <button
-        class="credentials-creator button"
-        on::click={() => {
-          setFocus(
-            primaryFocusEnums.credentials,
-            secondaryFocusEnums.credentials.creator
-          );
-        }}
-        disabled={pendingLogout}>New Credentials+</button
       >
     </div>
   </nav>
