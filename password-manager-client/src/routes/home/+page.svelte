@@ -64,7 +64,6 @@
   }
 </script>
 
-<div>this works</div>
 {#if !currentAuthStoreVals.pendingAuthCheckStore && currentAuthStoreVals.authStateStore}
   <Home />
 {:else}

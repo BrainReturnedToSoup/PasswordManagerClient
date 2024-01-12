@@ -2,7 +2,7 @@
   export let pendingLogout;
 </script>
 
-<div>settings preferences</div>
+<div>settings faq</div>
 
 <style>
 </style>

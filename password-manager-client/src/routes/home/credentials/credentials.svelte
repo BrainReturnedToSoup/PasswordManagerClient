@@ -9,12 +9,23 @@
   //hence you don't want to have such work in the event of a logout attempt
   export let pendingLogout;
 
+  //********COMPONENTS********/
+
+  import CredentialsMain from "./credentialsMain.svelte";
+  import CredentialsCreator from "./credentialsCreator.svelte";
+
   //********PAGE-FOCUS********/
 
   import { secondaryFocusEnums } from ".././pageFocusEnums";
 </script>
 
-<div></div>
+<div class="credentials container">
+  {#if secondaryFocus === secondaryFocusEnums.credentials.main}
+    <CredentialsMain {pendingLogout} />
+  {:else if secondaryFocus === secondaryFocusEnums.credentials.creator}
+    <CredentialsCreator {pendingLogout} />
+  {/if}
+</div>
 
 <style>
 </style>

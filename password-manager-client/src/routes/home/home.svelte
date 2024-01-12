@@ -97,6 +97,18 @@
 
     pendingLogout = false;
   }
+
+  //********BUTTON-SELECTION********/
+
+  $: creatorSelected =
+    secondaryFocus === secondaryFocusEnums.credentials.creator;
+
+  $: accountSelected = secondaryFocus === secondaryFocusEnums.settings.account;
+
+  $: preferencesSelected =
+    secondaryFocus === secondaryFocusEnums.settings.preferences;
+
+  $: faqSelected = secondaryFocus === secondaryFocusEnums.settings.faq;
 </script>
 
 <div class="page home">
@@ -120,22 +132,26 @@
       >
     </div>
 
-    <div class="credentials-main container">
-      <button
-        class="credentials-main button"
-        on:click={() => {
-          setFocus(
-            primaryFocusEnums.credentials,
-            secondaryFocusEnums.credentials.main
-          );
-        }}
-        disabled={pendingLogout}>Back to main</button
-      >
+    <div class="credentials-main button container">
+      <!-- Only render the back to main button if you are not on main-->
+      {#if secondaryFocus !== secondaryFocusEnums.credentials.main}
+        <button
+          class="credentials-main button"
+          on:click={() => {
+            setFocus(
+              primaryFocusEnums.credentials,
+              secondaryFocusEnums.credentials.main
+            );
+          }}
+          disabled={pendingLogout}>Back to main</button
+        >
+      {/if}
     </div>
 
-    <div class="credentials-creator container">
+    <div class="credentials-creator button container">
       <button
         class="credentials-creator button"
+        class:selected={creatorSelected}
         on:click={() => {
           setFocus(
             primaryFocusEnums.credentials,
@@ -146,10 +162,11 @@
       >
     </div>
 
-    <div class="settings container button">
+    <div class="settings-button container">
       <h1 class="settings header">Settings</h1>
       <button
-        class="settings account"
+        class="settings-account button"
+        class:selected={accountSelected}
         on:click={() => {
           setFocus(
             primaryFocusEnums.settings,
@@ -159,7 +176,8 @@
         disabled={pendingLogout}>Account</button
       >
       <button
-        class="settings preferences button"
+        class="settings-preferences button"
+        class:selected={preferencesSelected}
         on:click={() => {
           setFocus(
             primaryFocusEnums.settings,
@@ -169,7 +187,8 @@
         disabled={pendingLogout}>Preferences</button
       >
       <button
-        class="settings faq button"
+        class="settings-faq button"
+        class:selected={faqSelected}
         on:click={() => {
           setFocus(
             primaryFocusEnums.settings,
@@ -190,4 +209,7 @@
 </div>
 
 <style>
+  .selected {
+    font-weight: 700;
+  }
 </style>
