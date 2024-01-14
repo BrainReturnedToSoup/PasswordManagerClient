@@ -65,7 +65,6 @@
   //ensuring that the focus change based on clicking
   //the navigation emits to the settings component, and
   //not cause an infinite loop of updates.
-  let settingsComponent;
   let scrolledFlag = false;
 
   const hasScrolled = {
@@ -76,10 +75,6 @@
       scrolledFlag = false;
     },
   };
-
-  $: if (primaryFocus === primaryFocusEnums.settings && !scrolledFlag) {
-    settingsComponent.scrollToSubsection(secondaryFocus);
-  }
 
   //************LOG-OUT*************/
 
@@ -195,7 +190,6 @@
             primary: primaryFocusEnums.settings,
             secondary: secondaryFocusEnums.settings.account,
           });
-          settingsComponent.scrollToSubsection(secondaryFocus);
         }}>Account</button
       >
       <button
@@ -208,7 +202,6 @@
             primary: primaryFocusEnums.settings,
             secondary: secondaryFocusEnums.settings.preferences,
           });
-          settingsComponent.scrollToSubsection(secondaryFocus);
         }}>Preferences</button
       >
       <button
@@ -221,7 +214,6 @@
             primary: primaryFocusEnums.settings,
             secondary: secondaryFocusEnums.settings.faq,
           });
-          settingsComponent.scrollToSubsection(secondaryFocus);
         }}>FAQ</button
       >
     </div>
@@ -234,12 +226,7 @@
       with this parent component so that when the focus changes from either the parent
       (clicking on a settings nav) or from the child (scrolling through the settings) both 
       parties remain in sync on their secondary focus-->
-      <Settings
-        bind:this={settingsComponent}
-        {setFocus}
-        {hasScrolled}
-        {pendingLogout}
-      />
+      <Settings {secondaryFocus} {pendingLogout} {hasScrolled} {setFocus} />
     {/if}
   </main>
 </div>

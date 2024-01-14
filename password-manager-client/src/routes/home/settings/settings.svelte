@@ -6,6 +6,10 @@
   //settings container
   export let setFocus;
 
+  //for defining essentially the scroll position to display the target
+  //secondary focus within settings
+  export let secondaryFocus;
+
   //ensuring that the focus change based on clicking
   //the navigation emits to the settings component, and
   //not cause an infinite loop of updates.
@@ -23,9 +27,35 @@
 
   //*******SCROLL-POSITION****/
 
+  import { onMount } from "svelte";
   import { primaryFocusEnums, secondaryFocusEnums } from "../pageFocusEnums";
 
   let settingsContainer, accountComponent, preferencesComponent, faqComponent;
+
+  //sets the initial scroll position based on the supplied secondary focus prop
+  onMount(initPropBasedSecondaryFocus);
+
+  function initPropBasedSecondaryFocus() {
+    if (
+      !settingsContainer ||
+      !accountComponent ||
+      !preferencesComponent ||
+      !faqComponent
+    ) {
+      throw new Error(
+        "Settings secondary focus components failed to initialize on parent Settings component mount"
+      );
+    }
+
+    const offsetTop = {
+      [secondaryFocusEnums.settings.account]: accountComponent.offsetTop,
+      [secondaryFocusEnums.settings.preferences]:
+        preferencesComponent.offsetTop,
+      [secondaryFocusEnums.settings.faq]: faqComponent.offsetTop,
+    };
+
+    settingsContainer.scrollTop = offsetTop[secondaryFocus];
+  }
 
   function updateSecondaryFocus() {
     if (
@@ -37,14 +67,18 @@
       return; //defensive return just in case if a component isn't initialized
     }
 
-    const scrollTop = settingsContainer.scrollTop;
+    const { scrollTop } = settingsContainer;
     const offsetTop = {
-      account: accountComponent.offsetTop,
-      preferences: preferencesComponent.offsetTop,
-      faq: faqComponent.offsetTop,
+      [secondaryFocusEnums.settings.account]: accountComponent.offsetTop,
+      [secondaryFocusEnums.settings.preferences]:
+        preferencesComponent.offsetTop,
+      [secondaryFocusEnums.settings.faq]: faqComponent.offsetTop,
     };
 
-    if (scrollTop >= 0 && scrollTop < offsetTop.preferences) {
+    if (
+      scrollTop >= 0 &&
+      scrollTop < offsetTop[secondaryFocusEnums.settings.account]
+    ) {
       //account section in view, set the parent to such
       hasScrolled.true();
       setFocus({
@@ -52,8 +86,8 @@
         secondary: secondaryFocusEnums.settings.account,
       });
     } else if (
-      scrollTop > offsetTop.account &&
-      scrollTop <= offsetTop.preferences
+      scrollTop > offsetTop[secondaryFocusEnums.settings.account] &&
+      scrollTop <= offsetTop[secondaryFocusEnums.settings.preferences]
     ) {
       //preferences section in view, set the parent to such
       hasScrolled.true();
@@ -70,29 +104,6 @@
       });
     }
   }
-
-  //****SET-SECONDARY-FOCUS****/
-
-  export function scrollToSubsection(secondaryFocus) {
-    //used to set the secondary focus of settings, which involves
-    //scrolling to the corresponding subsection
-    if (
-      !settingsContainer ||
-      !accountComponent ||
-      !preferencesComponent ||
-      !faqComponent
-    ) {
-      return; //defensive return just in case if a component isn't initialized
-    }
-
-    const offsetTop = {
-      account: accountComponent.offsetTop,
-      preferences: preferencesComponent.offsetTop,
-      faq: faqComponent.offsetTop,
-    };
-
-    settingsContainer.scrollTop = offsetTop[secondaryFocus]; //instantly jumps the scroll to the desired subsection
-  }
 </script>
 
 <div
@@ -106,4 +117,7 @@
 </div>
 
 <style>
+  .settings.container {
+    overflow-y: scroll;
+  }
 </style>
