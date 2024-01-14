@@ -34,7 +34,7 @@
   let primaryFocus = primaryFocusEnums.credentials,
     secondaryFocus = secondaryFocusEnums.credentials.main;
 
-  function setFocus(primary, secondary) {
+  function setFocus({ primary, secondary }) {
     if (
       primary in primaryFocusEnums &&
       secondary in secondaryFocusEnums[primary]
@@ -46,6 +46,39 @@
       primaryFocus = primaryFocusEnums.credentials;
       secondaryFocus = secondaryFocusEnums.credentials.main;
     }
+  }
+
+  //********BUTTON-SELECTION********/
+
+  $: creatorSelected =
+    secondaryFocus === secondaryFocusEnums.credentials.creator;
+
+  $: accountSelected = secondaryFocus === secondaryFocusEnums.settings.account;
+
+  $: preferencesSelected =
+    secondaryFocus === secondaryFocusEnums.settings.preferences;
+
+  $: faqSelected = secondaryFocus === secondaryFocusEnums.settings.faq;
+
+  //****SETTINGS-SCROLL-POSITION****/
+
+  //ensuring that the focus change based on clicking
+  //the navigation emits to the settings component, and
+  //not cause an infinite loop of updates.
+  let settingsComponent;
+  let scrolledFlag = false;
+
+  const hasScrolled = {
+    true: () => {
+      scrolledFlag = true;
+    },
+    false: () => {
+      scrolledFlag = false;
+    },
+  };
+
+  $: if (primaryFocus === primaryFocusEnums.settings && !scrolledFlag) {
+    settingsComponent.scrollToSubsection(secondaryFocus);
   }
 
   //************LOG-OUT*************/
@@ -97,18 +130,6 @@
 
     pendingLogout = false;
   }
-
-  //********BUTTON-SELECTION********/
-
-  $: creatorSelected =
-    secondaryFocus === secondaryFocusEnums.credentials.creator;
-
-  $: accountSelected = secondaryFocus === secondaryFocusEnums.settings.account;
-
-  $: preferencesSelected =
-    secondaryFocus === secondaryFocusEnums.settings.preferences;
-
-  $: faqSelected = secondaryFocus === secondaryFocusEnums.settings.faq;
 </script>
 
 <div class="page home">
@@ -125,10 +146,8 @@
       <h1 class="censored-email">{censoredEmail}</h1>
       <button
         class="log-out"
-        on:click={() => {
-          handleLogout();
-        }}
-        disabled={pendingLogout || logoutError}>Log out</button
+        disabled={pendingLogout || logoutError}
+        on:click={handleLogout}>Log out</button
       >
     </div>
 
@@ -137,13 +156,14 @@
       {#if secondaryFocus !== secondaryFocusEnums.credentials.main}
         <button
           class="credentials-main button"
+          disabled={pendingLogout}
           on:click={() => {
-            setFocus(
-              primaryFocusEnums.credentials,
-              secondaryFocusEnums.credentials.main
-            );
-          }}
-          disabled={pendingLogout}>Back to main</button
+            hasScrolled.false();
+            setFocus({
+              primary: primaryFocusEnums.credentials,
+              secondary: secondaryFocusEnums.credentials.main,
+            });
+          }}>Back to main</button
         >
       {/if}
     </div>
@@ -152,13 +172,14 @@
       <button
         class="credentials-creator button"
         class:selected={creatorSelected}
+        disabled={pendingLogout}
         on:click={() => {
-          setFocus(
-            primaryFocusEnums.credentials,
-            secondaryFocusEnums.credentials.creator
-          );
-        }}
-        disabled={pendingLogout}>New Credentials+</button
+          hasScrolled.false();
+          setFocus({
+            primary: primaryFocusEnums.credentials,
+            secondary: secondaryFocusEnums.credentials.creator,
+          });
+        }}>New Credentials+</button
       >
     </div>
 
@@ -167,35 +188,41 @@
       <button
         class="settings-account button"
         class:selected={accountSelected}
+        disabled={pendingLogout}
         on:click={() => {
-          setFocus(
-            primaryFocusEnums.settings,
-            secondaryFocusEnums.settings.account
-          );
-        }}
-        disabled={pendingLogout}>Account</button
+          hasScrolled.false();
+          setFocus({
+            primary: primaryFocusEnums.settings,
+            secondary: secondaryFocusEnums.settings.account,
+          });
+          settingsComponent.scrollToSubsection(secondaryFocus);
+        }}>Account</button
       >
       <button
         class="settings-preferences button"
         class:selected={preferencesSelected}
+        disabled={pendingLogout}
         on:click={() => {
-          setFocus(
-            primaryFocusEnums.settings,
-            secondaryFocusEnums.settings.preferences
-          );
-        }}
-        disabled={pendingLogout}>Preferences</button
+          hasScrolled.false();
+          setFocus({
+            primary: primaryFocusEnums.settings,
+            secondary: secondaryFocusEnums.settings.preferences,
+          });
+          settingsComponent.scrollToSubsection(secondaryFocus);
+        }}>Preferences</button
       >
       <button
         class="settings-faq button"
         class:selected={faqSelected}
+        disabled={pendingLogout}
         on:click={() => {
-          setFocus(
-            primaryFocusEnums.settings,
-            secondaryFocusEnums.settings.faq
-          );
-        }}
-        disabled={pendingLogout}>FAQ</button
+          hasScrolled.false();
+          setFocus({
+            primary: primaryFocusEnums.settings,
+            secondary: secondaryFocusEnums.settings.faq,
+          });
+          settingsComponent.scrollToSubsection(secondaryFocus);
+        }}>FAQ</button
       >
     </div>
   </nav>
@@ -203,7 +230,16 @@
     {#if primaryFocus === primaryFocusEnums.credentials}
       <Credentials {secondaryFocus} {pendingLogout} />
     {:else if primaryFocus === primaryFocusEnums.settings}
-      <Settings {secondaryFocus} {pendingLogout} />
+      <!-- This 'Settings' component features bidirectional communication
+      with this parent component so that when the focus changes from either the parent
+      (clicking on a settings nav) or from the child (scrolling through the settings) both 
+      parties remain in sync on their secondary focus-->
+      <Settings
+        bind:this={settingsComponent}
+        {setFocus}
+        {hasScrolled}
+        {pendingLogout}
+      />
     {/if}
   </main>
 </div>

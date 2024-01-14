@@ -2,7 +2,9 @@
   export let pendingLogout;
 </script>
 
-<div>credentials main</div>
+<div class="credentials-main">
+  <div class="credentials-search"></div>
+</div>
 
 <style>
 </style>

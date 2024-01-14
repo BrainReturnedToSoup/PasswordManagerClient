@@ -2,7 +2,9 @@
   export let pendingLogout;
 </script>
 
-<div>settings account</div>
+<div class="settings-account container">
+  <h2 class="settings-account header">Account</h2>
+</div>
 
 <style>
 </style>
