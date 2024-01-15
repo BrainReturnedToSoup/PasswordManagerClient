@@ -9,28 +9,38 @@
   const blankString = "";
   let errorMessage = blankString;
 
-  //*********CENSORED-EMAIL********/
-
-  import { currAuthEmailCensoredStore } from "../../lib/state/authState";
-  import { onDestroy } from "svelte";
-
-  let censoredEmail = blankString;
-
-  const censoredEmailSubscription = currAuthEmailCensoredStore.subscribe(
-    (state) => {
-      censoredEmail = state;
-    }
-  );
-
-  onDestroy(censoredEmailSubscription);
-
-  //**********PAGE*FOCUS***********/
-
-  //page focus represents what is displayed as the main content corresponding
-  //to the selected nav bar option
+  //**********HOME-STATE***********/
 
   import { primaryFocusEnums, secondaryFocusEnums } from "./pageFocusEnums";
 
+  import {
+    settingsSecondaryFocusStore,
+    settingsHasScrolledStore,
+  } from "../../lib/state/settingsState";
+  import { currAuthEmailCensoredStore } from "../../lib/state/authState";
+  import { onDestroy } from "svelte";
+
+  const stores = {
+    currAuthEmailCensoredStore,
+    settingsSecondaryFocusStore,
+    settingsHasScrolledStore,
+  }; //for property name reuse
+
+  const subscriptions = {};
+  let storeVals = {}; //reactive, as it contains the actual values of the store states
+
+  //for initializing the subscription instances, and ensuring proper cleanup
+  for (const [name, store] of Object.entries(stores)) {
+    subscriptions[name] = store.subscribe((state) => {
+      const clone = { ...storeVals };
+      clone[name] = state;
+      storeVals = clone; //to activate reactivity on change
+    });
+
+    onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
+  }
+
+  //local focus management
   let primaryFocus = primaryFocusEnums.credentials,
     secondaryFocus = secondaryFocusEnums.credentials.main;
 
@@ -39,13 +49,23 @@
       primary in primaryFocusEnums &&
       secondary in secondaryFocusEnums[primary]
     ) {
-      //only if both arguments are valid values to use
       primaryFocus = primary;
       secondaryFocus = secondary;
     } else {
-      primaryFocus = primaryFocusEnums.credentials;
-      secondaryFocus = secondaryFocusEnums.credentials.main;
+      throw new Error(
+        "Invalid setFocus args",
+        `Primary: ${primary} Secondary: ${secondary}`
+      );
     }
+  }
+
+  //if a focus change is within settings, and the cause isn't caused by
+  //a scroll within the settings page
+  $: if (
+    primaryFocus === primaryFocusEnums.settings &&
+    !storeVals.settingsHasScrolledStore
+  ) {
+    stores.settingsSecondaryFocusStore[secondaryFocus]();
   }
 
   //********BUTTON-SELECTION********/
@@ -59,22 +79,6 @@
     secondaryFocus === secondaryFocusEnums.settings.preferences;
 
   $: faqSelected = secondaryFocus === secondaryFocusEnums.settings.faq;
-
-  //****SETTINGS-SCROLL-POSITION****/
-
-  //ensuring that the focus change based on clicking
-  //the navigation emits to the settings component, and
-  //not cause an infinite loop of updates.
-  let scrolledFlag = false;
-
-  const hasScrolled = {
-    true: () => {
-      scrolledFlag = true;
-    },
-    false: () => {
-      scrolledFlag = false;
-    },
-  };
 
   //************LOG-OUT*************/
 
@@ -138,7 +142,7 @@
 
   <nav>
     <div class="profile container">
-      <h1 class="censored-email">{censoredEmail}</h1>
+      <h1 class="censored-email">{storeVals.currAuthEmailCensoredStore}</h1>
       <button
         class="log-out"
         disabled={pendingLogout || logoutError}
@@ -153,7 +157,7 @@
           class="credentials-main button"
           disabled={pendingLogout}
           on:click={() => {
-            hasScrolled.false();
+            stores.settingsHasScrolledStore.false();
             setFocus({
               primary: primaryFocusEnums.credentials,
               secondary: secondaryFocusEnums.credentials.main,
@@ -169,7 +173,7 @@
         class:selected={creatorSelected}
         disabled={pendingLogout}
         on:click={() => {
-          hasScrolled.false();
+          stores.settingsHasScrolledStore.false();
           setFocus({
             primary: primaryFocusEnums.credentials,
             secondary: secondaryFocusEnums.credentials.creator,
@@ -185,7 +189,7 @@
         class:selected={accountSelected}
         disabled={pendingLogout}
         on:click={() => {
-          hasScrolled.false();
+          stores.settingsHasScrolledStore.false();
           setFocus({
             primary: primaryFocusEnums.settings,
             secondary: secondaryFocusEnums.settings.account,
@@ -197,7 +201,7 @@
         class:selected={preferencesSelected}
         disabled={pendingLogout}
         on:click={() => {
-          hasScrolled.false();
+          stores.settingsHasScrolledStore.false();
           setFocus({
             primary: primaryFocusEnums.settings,
             secondary: secondaryFocusEnums.settings.preferences,
@@ -209,7 +213,7 @@
         class:selected={faqSelected}
         disabled={pendingLogout}
         on:click={() => {
-          hasScrolled.false();
+          stores.settingsHasScrolledStore.false();
           setFocus({
             primary: primaryFocusEnums.settings,
             secondary: secondaryFocusEnums.settings.faq,
@@ -220,13 +224,13 @@
   </nav>
   <main>
     {#if primaryFocus === primaryFocusEnums.credentials}
-      <Credentials {secondaryFocus} {pendingLogout} />
+      <Credentials {pendingLogout} />
     {:else if primaryFocus === primaryFocusEnums.settings}
       <!-- This 'Settings' component features bidirectional communication
       with this parent component so that when the focus changes from either the parent
       (clicking on a settings nav) or from the child (scrolling through the settings) both 
       parties remain in sync on their secondary focus-->
-      <Settings {secondaryFocus} {pendingLogout} {hasScrolled} {setFocus} />
+      <Settings {pendingLogout} {setFocus} />
     {/if}
   </main>
 </div>

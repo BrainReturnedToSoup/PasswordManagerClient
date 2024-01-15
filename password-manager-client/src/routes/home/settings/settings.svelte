@@ -1,19 +1,7 @@
 <script>
   //**********PROPS***********/
 
-  //the setFocus api as part of the parent element, which is important for
-  //ensuring the parent component is in sync with scrolling through the
-  //settings container
   export let setFocus;
-
-  //for defining essentially the scroll position to display the target
-  //secondary focus within settings
-  export let secondaryFocus;
-
-  //ensuring that the focus change based on clicking
-  //the navigation emits to the settings component, and
-  //not cause an infinite loop of updates.
-  export let hasScrolled;
 
   //prevent functionalities that may depend on proper auth,
   //hence you don't want to have such work in the event of a logout attempt
@@ -25,62 +13,98 @@
   import SettingsPreferences from "./settingsPreferences.svelte";
   import SettingsFaq from "./settingsFaq.svelte";
 
+  //*******SETTING-STATE******/
+
+  import {
+    settingsSecondaryFocusStore,
+    settingsHasScrolledStore,
+  } from "../../../lib/state/settingsState";
+  import { onDestroy } from "svelte";
+
+  const stores = {
+    settingsSecondaryFocusStore,
+    settingsHasScrolledStore,
+  }; //for property name reuse
+
+  const subscriptions = {};
+  let storeVals = {}; //reactive, as it contains the actual values of the store states
+
+  //for initializing the subscription instances, and ensuring proper cleanup
+  for (const [name, store] of Object.entries(stores)) {
+    subscriptions[name] = store.subscribe((state) => {
+      const clone = { ...storeVals };
+      clone[name] = state;
+      storeVals = clone; //to activate reactivity on change
+    });
+
+    onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
+  }
+
   //*******SCROLL-POSITION****/
 
-  import { onMount } from "svelte";
   import { primaryFocusEnums, secondaryFocusEnums } from "../pageFocusEnums";
+  import { tick } from "svelte";
 
-  let settingsContainer, accountComponent, preferencesComponent, faqComponent;
+  let settingsContainer, accountContainer, preferencesContainer, faqContainer;
 
-  //sets the initial scroll position based on the supplied secondary focus prop
-  onMount(initPropBasedSecondaryFocus);
+  //syncs the scroll position to match the secondary focus in the store
+  //only does so if the storeVal update isn't due to manually scrolling
+  $: if (!storeVals.settingsHasScrolledStore) {
+    syncSecondaryFocus();
+  }
 
-  function initPropBasedSecondaryFocus() {
+  async function syncSecondaryFocus() {
+    await tick(); //ensures the components are properly mounted
+
     if (
       !settingsContainer ||
-      !accountComponent ||
-      !preferencesComponent ||
-      !faqComponent
+      !accountContainer ||
+      !preferencesContainer ||
+      !faqContainer
     ) {
-      throw new Error(
-        "Settings secondary focus components failed to initialize on parent Settings component mount"
-      );
+      return;
     }
 
     const offsetTop = {
-      [secondaryFocusEnums.settings.account]: accountComponent.offsetTop,
+      [secondaryFocusEnums.settings.account]: accountContainer.offsetTop,
       [secondaryFocusEnums.settings.preferences]:
-        preferencesComponent.offsetTop,
-      [secondaryFocusEnums.settings.faq]: faqComponent.offsetTop,
+        preferencesContainer.offsetTop,
+      [secondaryFocusEnums.settings.faq]: faqContainer.offsetTop,
     };
 
-    settingsContainer.scrollTop = offsetTop[secondaryFocus];
+    settingsContainer.scrollTop =
+      offsetTop[storeVals.settingsSecondaryFocusStore] -
+      offsetTop[secondaryFocusEnums.settings.account];
   }
 
-  function updateSecondaryFocus() {
+  async function handleScroll() {
+    await tick();
+
     if (
       !settingsContainer ||
-      !accountComponent ||
-      !preferencesComponent ||
-      !faqComponent
+      !accountContainer ||
+      !preferencesContainer ||
+      !faqContainer
     ) {
       return; //defensive return just in case if a component isn't initialized
     }
 
     const { scrollTop } = settingsContainer;
     const offsetTop = {
-      [secondaryFocusEnums.settings.account]: accountComponent.offsetTop,
+      [secondaryFocusEnums.settings.account]: accountContainer.offsetTop,
       [secondaryFocusEnums.settings.preferences]:
-        preferencesComponent.offsetTop,
-      [secondaryFocusEnums.settings.faq]: faqComponent.offsetTop,
+        preferencesContainer.offsetTop,
+      [secondaryFocusEnums.settings.faq]: faqContainer.offsetTop,
     };
+
+    //flag to prevent reduntant updatesthat propagate back to this component
+    stores.settingsHasScrolledStore.true();
 
     if (
       scrollTop >= 0 &&
       scrollTop < offsetTop[secondaryFocusEnums.settings.account]
     ) {
       //account section in view, set the parent to such
-      hasScrolled.true();
       setFocus({
         primary: primaryFocusEnums.settings,
         secondary: secondaryFocusEnums.settings.account,
@@ -90,14 +114,12 @@
       scrollTop <= offsetTop[secondaryFocusEnums.settings.preferences]
     ) {
       //preferences section in view, set the parent to such
-      hasScrolled.true();
       setFocus({
         primary: primaryFocusEnums.settings,
         secondary: secondaryFocusEnums.settings.preferences,
       });
     } else {
       //faq section in view, set the parent to such
-      hasScrolled.true();
       setFocus({
         primary: primaryFocusEnums.settings,
         secondary: secondaryFocusEnums.settings.faq,
@@ -107,17 +129,18 @@
 </script>
 
 <div
-  on:scroll={updateSecondaryFocus}
+  on:scroll={handleScroll}
   bind:this={settingsContainer}
   class="settings container"
 >
-  <SettingsAccount bind:this={accountComponent} {pendingLogout} />
-  <SettingsPreferences bind:this={preferencesComponent} {pendingLogout} />
-  <SettingsFaq bind:this={faqComponent} {pendingLogout} />
+  <SettingsAccount bind:accountContainer {pendingLogout} />
+  <SettingsPreferences bind:preferencesContainer {pendingLogout} />
+  <SettingsFaq bind:faqContainer {pendingLogout} />
 </div>
 
 <style>
   .settings.container {
     overflow-y: scroll;
+    height: 500px;
   }
 </style>
