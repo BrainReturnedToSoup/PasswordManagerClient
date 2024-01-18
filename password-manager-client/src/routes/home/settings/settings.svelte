@@ -9,9 +9,9 @@
 
   //********COMPONENTS********/
 
-  import SettingsAccount from "./settingsAccount.svelte";
-  import SettingsPreferences from "./settingsPreferences.svelte";
-  import SettingsFaq from "./settingsFaq.svelte";
+  import SettingsAccount from "./account/settingsAccount.svelte";
+  import SettingsPreferences from "./preferences/settingsPreferences.svelte";
+  import SettingsFaq from "./faq/settingsFaq.svelte";
 
   //*******SETTING-STATE******/
 
@@ -42,8 +42,8 @@
 
   //*******SCROLL-POSITION****/
 
-  import { primaryFocusEnums, secondaryFocusEnums } from "../pageFocusEnums";
   import { tick } from "svelte";
+  import { primaryFocusEnums, secondaryFocusEnums } from "../pageFocusEnums";
 
   let settingsContainer, accountContainer, preferencesContainer, faqContainer;
 
@@ -72,13 +72,20 @@
       [secondaryFocusEnums.settings.faq]: faqContainer.offsetTop,
     };
 
+    //this ensures that the offset distance is based on
+    //the corresponding container and not the page itself
     settingsContainer.scrollTop =
       offsetTop[storeVals.settingsSecondaryFocusStore] -
       offsetTop[secondaryFocusEnums.settings.account];
   }
 
+  //scrolling updates the focus corresponding to the position within
+  //the scroll view. This way, if the user manually scrolls through the
+  //settings rather than using the subsection nav links, the parent
+  //component is automatically updated in terms of focus. This
+  //is important for the nav button highlighting.
   async function handleScroll() {
-    await tick();
+    await tick(); //ensures the components are properly mounted
 
     if (
       !settingsContainer ||
@@ -89,7 +96,6 @@
       return; //defensive return just in case if a component isn't initialized
     }
 
-    const { scrollTop } = settingsContainer;
     const offsetTop = {
       [secondaryFocusEnums.settings.account]: accountContainer.offsetTop,
       [secondaryFocusEnums.settings.preferences]:
@@ -97,14 +103,16 @@
       [secondaryFocusEnums.settings.faq]: faqContainer.offsetTop,
     };
 
-    //flag to prevent reduntant updatesthat propagate back to this component
+    const { scrollTop } = settingsContainer;
+
+    //flag to prevent reduntant updates that propagate back to this component
     stores.settingsHasScrolledStore.true();
 
     if (
       scrollTop >= 0 &&
       scrollTop < offsetTop[secondaryFocusEnums.settings.account]
     ) {
-      //account section in view, set the parent to such
+      //account section in view, update focus in parent
       setFocus({
         primary: primaryFocusEnums.settings,
         secondary: secondaryFocusEnums.settings.account,
@@ -113,13 +121,13 @@
       scrollTop > offsetTop[secondaryFocusEnums.settings.account] &&
       scrollTop <= offsetTop[secondaryFocusEnums.settings.preferences]
     ) {
-      //preferences section in view, set the parent to such
+      //preferences section in view, update focus in parent
       setFocus({
         primary: primaryFocusEnums.settings,
         secondary: secondaryFocusEnums.settings.preferences,
       });
     } else {
-      //faq section in view, set the parent to such
+      //faq section in view, update focus in parent
       setFocus({
         primary: primaryFocusEnums.settings,
         secondary: secondaryFocusEnums.settings.faq,
@@ -141,6 +149,7 @@
 <style>
   .settings.container {
     overflow-y: scroll;
+    scroll-behavior: smooth;
     height: 500px;
   }
 </style>

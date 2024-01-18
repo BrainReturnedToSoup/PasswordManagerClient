@@ -9,22 +9,22 @@
 
   import { handleSignupRequest } from "../../lib/loginSignupHandlers";
 
-  //****************COMPONENT-STATE****************//
-
-  let email, password, confirmPassword;
-  let pendingSubmit = false;
-
   //*********************MISC***********************/
 
   const blankString = "";
 
-  //*************CONSTRAINT-VALIDATION*************//
+  //****************COMPONENT-STATE****************//
+
+  let email, password, confirmPassword;
+  let pendingSubmit = false;
 
   let errorTextEmail = blankString,
     errorTextPassword = blankString,
     errorTextConfirmPassword = blankString;
 
   let errorTextServer = blankString;
+
+  //*************CONSTRAINT-VALIDATION*************//
 
   $: {
     if (email !== blankString) {
@@ -91,13 +91,18 @@
 
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
-    let reqError;
+    let reqError, error;
 
     try {
       //will await the resolution of the promise for pendingSubmit flag execution order
       reqError = await handleSignupRequest(email, password, confirmPassword); //will handle changing auth state itself, and rerouting is based purely on auth state itself
     } catch (err) {
       console.error("sign-up submit error", err, err.stack);
+      error = err;
+    }
+
+    if (error) {
+      errorTextServer = error;
     }
 
     if (reqError) {

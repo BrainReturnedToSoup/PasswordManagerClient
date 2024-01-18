@@ -17,11 +17,11 @@
     settingsSecondaryFocusStore,
     settingsHasScrolledStore,
   } from "../../lib/state/settingsState";
-  import { currAuthEmailCensoredStore } from "../../lib/state/authState";
+  import { currAuthCensoredEmailStore } from "../../lib/state/authState";
   import { onDestroy } from "svelte";
 
   const stores = {
-    currAuthEmailCensoredStore,
+    currAuthEmailCensoredStore: currAuthCensoredEmailStore,
     settingsSecondaryFocusStore,
     settingsHasScrolledStore,
   }; //for property name reuse
@@ -40,7 +40,9 @@
     onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
   }
 
-  //local focus management
+  //manages the focus values for the home page. The primary focus determines the main
+  //container existing within 'main', and the secondary focus determines the content
+  //within the determined container.
   let primaryFocus = primaryFocusEnums.credentials,
     secondaryFocus = secondaryFocusEnums.credentials.main;
 
@@ -59,8 +61,12 @@
     }
   }
 
-  //if a focus change is within settings, and the cause isn't caused by
-  //a scroll within the settings page
+  //if the new focus is part of the settings and if the change was
+  //not caused by a manual settings scroll event, this means the settings
+  //component needs to be synchronized with the secondary focus. This allows
+  //the nav buttons for settings to control the scroll position within the container.
+
+  //This is achieved by updating the corresponding store for setting's secondary focus.
   $: if (
     primaryFocus === primaryFocusEnums.settings &&
     !storeVals.settingsHasScrolledStore
@@ -106,8 +112,9 @@
     try {
       //will delete the session associated with the supplied cookie,
       //clear the jwt cookie, and send a sucess flag
-      const res = await fetch("/log-out", { method: "POST" });
-      logoutResult = await res.json();
+      logoutResult = await (
+        await fetch("/home/log-out", { method: "POST" })
+      ).json();
     } catch (err) {
       error = err;
     }
@@ -116,15 +123,18 @@
       console.error("handleLogout: ", error, error.stack);
       errorMessage = `Fatal ${error}`;
       logoutErrorFlagReset();
-    } else if (logoutResult.success) {
+      return;
+    }
+
+    if (!logoutResult.success) {
+      errorMessage = logoutResult.error ? logoutResult.error : "Server Error";
+      logoutErrorFlagReset();
+    } else {
       errorMessage = blankString;
-      authStateStore.authedFalse();
-      redirectToLoginStore.true();
       //will have logged out thus you don't want to make a redundant
       //auth check on the login page when it mounts
-    } else {
-      errorMessage = logoutResult.error;
-      logoutErrorFlagReset();
+      authStateStore.authedFalse();
+      redirectToLoginStore.true();
     }
 
     pendingLogout = false;

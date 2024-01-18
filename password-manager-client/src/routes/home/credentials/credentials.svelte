@@ -11,8 +11,8 @@
 
   //********COMPONENTS********/
 
-  import CredentialsMain from "./credentialsMain.svelte";
-  import CredentialsCreator from "./credentialsCreator.svelte";
+  import CredentialsMain from "./main/credentialsMain.svelte";
+  import CredentialsCreator from "./creator/credentialsCreator.svelte";
 
   //********PAGE-FOCUS********/
 

@@ -1,7 +1,7 @@
 import {
   authStateStore,
   redirectToHomeStore,
-  currAuthEmailCensoredStore,
+  currAuthCensoredEmailStore,
 } from "./state/authState";
 
 async function sendFormReq(route, payload) {
@@ -22,10 +22,10 @@ async function sendFormReq(route, payload) {
 async function handleLoginRequest(email, password) {
   //USE BODY PARSER MIDDLEWARE ON SERVER
 
-  let loginResult, error;
+  let result, error;
 
   try {
-    loginResult = await sendFormReq("/log-in", { email, password });
+    result = await sendFormReq("/log-in", { email, password });
   } catch (err) {
     error = err;
   }
@@ -35,20 +35,27 @@ async function handleLoginRequest(email, password) {
     console.error(`handleLoginRequest error`, error, error.stack);
 
     authStateStore.authedFalse();
-    currAuthEmailCensoredStore.clearEmail();
+    currAuthCensoredEmailStore.clearEmail();
     redirectToHomeStore.false();
+
+    return error;
   }
 
-  if (loginResult.error) {
+  //some type of internal error occured on the server
+  if (!result.success && result.error) {
     authStateStore.authedFalse();
-    currAuthEmailCensoredStore.clearEmail();
+    currAuthCensoredEmailStore.clearEmail();
     redirectToHomeStore.false();
-    return loginResult.error; //take the error value and display such on the UI
+
+    return result.error;
   }
 
-  if (loginResult.success) {
+  //means the user is already authed
+  //or that the user successfully logged in
+  //SHORT CIRCUITED CONDITION
+  if (result.success || (!result.success && result.auth)) {
     authStateStore.authedTrue();
-    currAuthEmailCensoredStore.setEmail(loginResult.email);
+    currAuthCensoredEmailStore.setEmail(result.email);
     redirectToHomeStore.true();
   }
 }
@@ -56,10 +63,10 @@ async function handleLoginRequest(email, password) {
 async function handleSignupRequest(email, password, confirmPassword) {
   //USE BODY PARSER MIDDLEWARE ON SERVER
 
-  let signupResult, error;
+  let result, error;
 
   try {
-    signupResult = await sendFormReq("/sign-up", {
+    result = await sendFormReq("/sign-up", {
       email,
       password,
       confirmPassword,
@@ -68,24 +75,32 @@ async function handleSignupRequest(email, password, confirmPassword) {
     error = err;
   }
 
+  //some type of error occurred from the client side
   if (error) {
     console.error(`handleSignupRequest error`, error, error.stack);
 
     authStateStore.authedFalse();
-    currAuthEmailCensoredStore.clearEmail();
+    currAuthCensoredEmailStore.clearEmail();
     redirectToHomeStore.false();
+
+    return error;
   }
 
-  if (signupResult.error) {
+  //some type of internal error occured on the server
+  if (!result.success && result.error) {
     authStateStore.authedFalse();
-    currAuthEmailCensoredStore.clearEmail();
+    currAuthCensoredEmailStore.clearEmail();
     redirectToHomeStore.false();
-    return signupResult.error; //take the error value and display such on the UI
+
+    return result.error;
   }
 
-  if (signupResult.success) {
+  //means the user is already authed
+  //or that the user successfully signed up
+  //SHORT CIRCUITED CONDITION
+  if (result.success || (!result.success && result.auth)) {
     authStateStore.authedTrue();
-    currAuthEmailCensoredStore.setEmail(signupResult.email);
+    currAuthCensoredEmailStore.setEmail(result.email);
     redirectToHomeStore.true();
   }
 }

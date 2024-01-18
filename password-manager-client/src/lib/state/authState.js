@@ -40,7 +40,7 @@ const create_localAuthStateStore = () => {
   };
 };
 
-const create_currAuthEmailCensoredStore = () => {
+const create_currAuthCensoredEmailStore = () => {
   const { subscribe, set } = writable("");
 
   return {
@@ -86,7 +86,7 @@ const create_redirectToLoginStore = () => {
 
 const pendingAuthCheckStore = create_pendingAuthCheckStore(),
   authStateStore = create_localAuthStateStore(),
-  currAuthEmailCensoredStore = create_currAuthEmailCensoredStore();
+  currAuthCensoredEmailStore = create_currAuthCensoredEmailStore();
 
 const redirectToHomeStore = create_redirectToHomeStore(), //for preventing redundant auth check request on the home page if authed through login/signup
   redirectToLoginStore = create_redirectToLoginStore(); //for preventing redundant auth check request on the login page based on a logout redirect
@@ -107,22 +107,26 @@ const requestAuthState = async () => {
 const checkAuth = async () => {
   pendingAuthCheckStore.pendingTrue();
 
+  let result, error;
+
   try {
-    const authStateObj = await requestAuthState();
+    result = await requestAuthState();
+  } catch (err) {
+    error = err;
+  }
 
-    if (authStateObj.auth) {
-      authStateStore.authedTrue();
-      currAuthEmailCensoredStore.setEmail(authStateObj.email); //for the profile UI feature on the home page
-    } else {
-      authStateStore.authedFalse();
-      currAuthEmailCensoredStore.clearEmail();
-    }
-  } catch (error) {
-    // Handle the error (likely including an auth error state)
-    console.log("checkAuth Request Error", error, error.stack);
-
+  if (error) {
+    console.error("checkAuth Request Error", error, error.stack);
     authStateStore.authedFalse();
-    currAuthEmailCensoredStore.clearEmail();
+    currAuthCensoredEmailStore.clearEmail();
+  }
+
+  if (result.success && result.auth) {
+    authStateStore.authedTrue();
+    currAuthCensoredEmailStore.setEmail(result.email); //for the profile UI feature on the home page
+  } else {
+    authStateStore.authedFalse();
+    currAuthCensoredEmailStore.clearEmail();
   }
 
   pendingAuthCheckStore.pendingFalse();
@@ -131,7 +135,7 @@ const checkAuth = async () => {
 export {
   pendingAuthCheckStore,
   authStateStore,
-  currAuthEmailCensoredStore,
+  currAuthCensoredEmailStore,
   redirectToHomeStore,
   redirectToLoginStore,
   requestAuthState,
