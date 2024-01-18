@@ -59,7 +59,9 @@
 <div class="delete-account container">
   <h3 class="delete-account header">Delete Your Account</h3>
 
-  <p class="delete-account description">{errorText}</p>
+  <p class="delete-account description"></p>
+
+  <p class="delete-account server error-message">{errorText}</p>
 
   <form
     action="/home/settings/delete-account"

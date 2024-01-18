@@ -60,7 +60,7 @@ async function handleLoginRequest(email, password) {
   }
 }
 
-async function handleSignupRequest(email, password, confirmPassword) {
+async function handleSignupRequest(email, password) {
   //USE BODY PARSER MIDDLEWARE ON SERVER
 
   let result, error;
@@ -69,7 +69,6 @@ async function handleSignupRequest(email, password, confirmPassword) {
     result = await sendFormReq("/sign-up", {
       email,
       password,
-      confirmPassword,
     });
   } catch (err) {
     error = err;

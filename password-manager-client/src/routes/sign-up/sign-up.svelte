@@ -95,7 +95,7 @@
 
     try {
       //will await the resolution of the promise for pendingSubmit flag execution order
-      reqError = await handleSignupRequest(email, password, confirmPassword); //will handle changing auth state itself, and rerouting is based purely on auth state itself
+      reqError = await handleSignupRequest(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
     } catch (err) {
       console.error("sign-up submit error", err, err.stack);
       error = err;

@@ -19,11 +19,11 @@ function validatePassword(password) {
   }
 
   if (password.length < 12) {
-    return "Password is too large. Must be between 12 and 20 characters";
+    return "Password is too small. Must be between 12 and 20 characters";
   }
 
   if (password.length > 20) {
-    return "Password is too small. Must be between 12 and 20 characters";
+    return "Password is too large. Must be between 12 and 20 characters";
   }
 
   const passwordPattern =
