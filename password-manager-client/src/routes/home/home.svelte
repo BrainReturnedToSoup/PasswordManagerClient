@@ -3,176 +3,159 @@
 
   import Credentials from "./credentials/credentials.svelte";
   import Settings from "./settings/settings.svelte";
+  import Error from "./error/error.svelte";
 
-  //********ERROR-MESSAGES*********/
-
-  const blankString = "";
-  let errorMessage = blankString;
-
-  //**********HOME-STATE***********/
+  //************ENUMS**************/
 
   import { primaryFocusEnums, secondaryFocusEnums } from "./pageFocusEnums";
 
-  import {
-    settingsSecondaryFocusStore,
-    settingsHasScrolledStore,
-  } from "../../lib/state/settingsState";
-  import { currAuthCensoredEmailStore } from "../../lib/state/authState";
+  //*********STORE-VALUES**********/
+
   import { onDestroy } from "svelte";
+  import { disableButtonStateStore } from "../../lib/state/home/disableButton";
+  import { settingsNavClickedStore } from "../../lib/state/home/settings";
+  import { errorMessageStore } from "../../lib/state/home/error";
+  import {
+    primaryFocusStore,
+    secondaryFocusStore,
+  } from "../../lib/state/home/focus";
 
   const stores = {
-    currAuthEmailCensoredStore: currAuthCensoredEmailStore,
-    settingsSecondaryFocusStore,
-    settingsHasScrolledStore,
+    primaryFocusStore,
+    secondaryFocusStore,
+    errorMessageStore,
+    disableButtonStateStore,
   }; //for property name reuse
-
-  const subscriptions = {};
   let storeVals = {}; //reactive, as it contains the actual values of the store states
 
   //for initializing the subscription instances, and ensuring proper cleanup
   for (const [name, store] of Object.entries(stores)) {
-    subscriptions[name] = store.subscribe((state) => {
+    const unsubscribe = store.subscribe((state) => {
       const clone = { ...storeVals };
       clone[name] = state;
       storeVals = clone; //to activate reactivity on change
     });
 
-    onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
+    onDestroy(unsubscribe); //ensure to unsubscribe on component destruction
   }
 
-  //manages the focus values for the home page. The primary focus determines the main
-  //container existing within 'main', and the secondary focus determines the content
-  //within the determined container.
-  let primaryFocus = primaryFocusEnums.credentials,
-    secondaryFocus = secondaryFocusEnums.credentials.main;
+  //****NAV-BUTTON-SELECTION-FLAG****/
 
-  function setFocus({ primary, secondary }) {
-    if (
-      primary in primaryFocusEnums &&
-      secondary in secondaryFocusEnums[primary]
-    ) {
-      primaryFocus = primary;
-      secondaryFocus = secondary;
-    } else {
-      throw new Error(
-        "Invalid setFocus args",
-        `Primary: ${primary} Secondary: ${secondary}`
-      );
-    }
-  }
+  $: selected = {
+    creator:
+      storeVals.secondaryFocusStore === secondaryFocusEnums.credentials.creator,
 
-  //if the new focus is part of the settings and if the change was
-  //not caused by a manual settings scroll event, this means the settings
-  //component needs to be synchronized with the secondary focus. This allows
-  //the nav buttons for settings to control the scroll position within the container.
+    account:
+      storeVals.secondaryFocusStore === secondaryFocusEnums.settings.account,
 
-  //This is achieved by updating the corresponding store for setting's secondary focus.
-  $: if (
-    primaryFocus === primaryFocusEnums.settings &&
-    !storeVals.settingsHasScrolledStore
-  ) {
-    stores.settingsSecondaryFocusStore[secondaryFocus]();
-  }
+    preferences:
+      storeVals.secondaryFocusStore ===
+      secondaryFocusEnums.settings.preferences,
 
-  //********BUTTON-SELECTION********/
+    faq: storeVals.secondaryFocusStore === secondaryFocusEnums.settings.faq,
+  };
 
-  $: creatorSelected =
-    secondaryFocus === secondaryFocusEnums.credentials.creator;
+  //************LOGOUT***************/
 
-  $: accountSelected = secondaryFocus === secondaryFocusEnums.settings.account;
+  import { redirectToLoginStore } from "../../lib/state/auth/redirect";
+  import { authStateStore } from "../../lib/state/auth/auth";
+  import authApis from "../../lib/requestAPIs/auth";
 
-  $: preferencesSelected =
-    secondaryFocus === secondaryFocusEnums.settings.preferences;
-
-  $: faqSelected = secondaryFocus === secondaryFocusEnums.settings.faq;
-
-  //************LOG-OUT*************/
-
-  import {
-    authStateStore,
-    redirectToLoginStore,
-  } from "../../lib/state/authState";
-
-  const twoSecondDelay = 2000;
   let pendingLogout = false,
-    logoutError = false;
-
-  function logoutErrorFlagReset() {
-    logoutError = true;
-    setTimeout(() => {
-      logoutError = false;
-    }, twoSecondDelay);
-  }
+    logoutDisabled = false;
 
   async function handleLogout() {
     pendingLogout = true;
 
-    let logoutResult, error;
+    const result = await authApis.post.logout();
 
-    try {
-      //will delete the session associated with the supplied cookie,
-      //clear the jwt cookie, and send a sucess flag
-      logoutResult = await (
-        await fetch("/home/log-out", { method: "POST" })
-      ).json();
-    } catch (err) {
-      error = err;
-    }
-
-    if (error) {
-      console.error("handleLogout: ", error, error.stack);
-      errorMessage = `Fatal ${error}`;
-      logoutErrorFlagReset();
-      return;
-    }
-
-    if (!logoutResult.success) {
-      errorMessage = logoutResult.error ? logoutResult.error : "Server Error";
-      logoutErrorFlagReset();
+    if (!result.success && !("auth" in result)) {
+      errorMessageStore.set(result.error); //an actual error occurred
+      logoutDisabledDelay();
     } else {
-      errorMessage = blankString;
-      //will have logged out thus you don't want to make a redundant
-      //auth check on the login page when it mounts
+      redirectToLoginStore.true(); //either worked or session already expired
       authStateStore.authedFalse();
-      redirectToLoginStore.true();
     }
 
     pendingLogout = false;
   }
+
+  function logoutDisabledDelay(delayMs = 2000) {
+    logoutDisabled = true;
+
+    setTimeout(() => {
+      logoutDisabled = false;
+    }, delayMs);
+  }
+
+  //************ON-CLICK*************/
+
+  //on click lifecycles for present buttons
+  const navClick = {
+    credentials: {
+      main: () => {
+        primaryFocusStore.credentials();
+        secondaryFocusStore.credentials.main();
+      },
+      creator: () => {
+        primaryFocusStore.credentials();
+        secondaryFocusStore.credentials.creator();
+      },
+    },
+
+    settings: {
+      account: () => {
+        settingsNavClickedStore.true();
+        primaryFocusStore.settings();
+        secondaryFocusStore.settings.account();
+      },
+      preferences: () => {
+        settingsNavClickedStore.true();
+        primaryFocusStore.settings();
+        secondaryFocusStore.settings.preferences();
+      },
+      faq: () => {
+        settingsNavClickedStore.true();
+        primaryFocusStore.settings();
+        secondaryFocusStore.settings.faq();
+      },
+    },
+  };
+
+  //********UPDATER-LIFECYCLE********/
+
+  import { updaterStateStore } from "../../lib/state/home/updater";
+
+  $: if (
+    storeVals.secondaryFocusStore !== secondaryFocusEnums.credentials.updater
+  ) {
+    updaterStateStore.clear(); //if the user is not on the updater, then ensure that it does not contain any past credential information
+  }
 </script>
 
 <div class="page home">
-  <div class="error-message container">
-    {#if errorMessage}
-      <p class="error-message">
-        {errorMessage}
-      </p>
-    {/if}
-  </div>
+  <!-- Will render based on the existence of an error message in the error message store. -->
+  <Error />
 
   <nav>
     <div class="profile container">
-      <h1 class="censored-email">{storeVals.currAuthEmailCensoredStore}</h1>
+      <!-- ADD EMAIL FROM USER STORE -->
+      <!-- <h1 class="censored-email">{}</h1>  -->
+
       <button
         class="log-out"
-        disabled={pendingLogout || logoutError}
+        disabled={pendingLogout || logoutDisabled}
         on:click={handleLogout}>Log out</button
       >
     </div>
 
     <div class="credentials-main button container">
       <!-- Only render the back to main button if you are not on main-->
-      {#if secondaryFocus !== secondaryFocusEnums.credentials.main}
+      {#if storeVals.secondaryFocusStore !== secondaryFocusEnums.credentials.main}
         <button
           class="credentials-main button"
-          disabled={pendingLogout}
-          on:click={() => {
-            stores.settingsHasScrolledStore.false();
-            setFocus({
-              primary: primaryFocusEnums.credentials,
-              secondary: secondaryFocusEnums.credentials.main,
-            });
-          }}>Back to main</button
+          disabled={storeVals.disableButtonStateStore}
+          on:click={navClick.credentials.main}>Back to main</button
         >
       {/if}
     </div>
@@ -180,67 +163,42 @@
     <div class="credentials-creator button container">
       <button
         class="credentials-creator button"
-        class:selected={creatorSelected}
-        disabled={pendingLogout}
-        on:click={() => {
-          stores.settingsHasScrolledStore.false();
-          setFocus({
-            primary: primaryFocusEnums.credentials,
-            secondary: secondaryFocusEnums.credentials.creator,
-          });
-        }}>New Credentials+</button
+        class:selected={selected.creator}
+        disabled={storeVals.disableButtonStateStore}
+        on:click={navClick.credentials.creator}>New Credentials</button
       >
     </div>
 
     <div class="settings-button container">
       <h1 class="settings header">Settings</h1>
+
       <button
         class="settings-account button"
-        class:selected={accountSelected}
-        disabled={pendingLogout}
-        on:click={() => {
-          stores.settingsHasScrolledStore.false();
-          setFocus({
-            primary: primaryFocusEnums.settings,
-            secondary: secondaryFocusEnums.settings.account,
-          });
-        }}>Account</button
+        class:selected={selected.account}
+        disabled={storeVals.disableButtonStateStore}
+        on:click={navClick.settings.account}>Account</button
       >
+
       <button
         class="settings-preferences button"
-        class:selected={preferencesSelected}
-        disabled={pendingLogout}
-        on:click={() => {
-          stores.settingsHasScrolledStore.false();
-          setFocus({
-            primary: primaryFocusEnums.settings,
-            secondary: secondaryFocusEnums.settings.preferences,
-          });
-        }}>Preferences</button
+        class:selected={selected.preferences}
+        disabled={storeVals.disableButtonStateStore}
+        on:click={navClick.settings.preferences}>Preferences</button
       >
+
       <button
         class="settings-faq button"
-        class:selected={faqSelected}
-        disabled={pendingLogout}
-        on:click={() => {
-          stores.settingsHasScrolledStore.false();
-          setFocus({
-            primary: primaryFocusEnums.settings,
-            secondary: secondaryFocusEnums.settings.faq,
-          });
-        }}>FAQ</button
+        class:selected={selected.faq}
+        disabled={storeVals.disableButtonStateStore}
+        on:click={navClick.settings.faq}>FAQ</button
       >
     </div>
   </nav>
   <main>
-    {#if primaryFocus === primaryFocusEnums.credentials}
-      <Credentials {pendingLogout} />
-    {:else if primaryFocus === primaryFocusEnums.settings}
-      <!-- This 'Settings' component features bidirectional communication
-      with this parent component so that when the focus changes from either the parent
-      (clicking on a settings nav) or from the child (scrolling through the settings) both 
-      parties remain in sync on their secondary focus-->
-      <Settings {pendingLogout} {setFocus} />
+    {#if storeVals.primaryFocusStore === primaryFocusEnums.settings}
+      <Settings /> <!-- scroll position will match the button highlight -->
+    {:else if storeVals.primaryFocusStore === primaryFocusEnums.credentials}
+      <Credentials />
     {/if}
   </main>
 </div>

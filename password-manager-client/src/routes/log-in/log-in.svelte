@@ -1,21 +1,14 @@
 <script>
-  import { handleLoginRequest } from "../../lib/loginSignupHandlers";
-
-  //*********************MISC***********************/
-
-  const blankString = "";
-
-  //*************CONSTRAINT-VALIDATION*************//
-
-  let errorTextServer = blankString;
-
-  function clearErrorTextServer() {
-    errorTextServer = blankString;
-  }
-
-  //*****************FORM-SUBMISSION****************//
+  //****************BINDED-INPUTS******************//
 
   let email, password;
+
+  //*****************FORM-SUBMISSION***************//
+
+  import { redirectToHomeStore } from "../../lib/state/auth/redirect";
+  import { authStateStore } from "../../lib/state/auth/auth";
+  import authApis from "../../lib/requestAPIs/auth";
+
   let pendingSubmit = false;
 
   async function onSubmit(e) {
@@ -23,44 +16,49 @@
 
     pendingSubmit = true; //flag to prevent spamming requests for signing up
 
-    let reqError, error;
+    //will await the resolution of the promise for pendingSubmit flag execution order
+    const result = await authApis.post.login(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
 
-    try {
-      //will await the resolution of the promise for pendingSubmit flag execution order
-      reqError = await handleLoginRequest(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
-    } catch (err) {
-      console.error("log-in submit error", error, error.stack);
-      error = err;
-    }
-
-    if (error) {
-      errorTextServer = error;
-    }
-
-    if (reqError) {
-      errorTextServer = reqError;
+    if (!result.success && !result.auth) {
+      errorTextServer = result.error; //an error occured somewhere in the request lifecycle (client and server)
+    } else {
+      redirectToHomeStore.true(); //otherwise mean the use is authed from the successful login, or from the existing token in cookies.
+      authStateStore.authedTrue();
     }
 
     pendingSubmit = false; //reset the request flag
   }
 
-  //**************BUTTON-DISABLED-FLAG**************//
+  //*****************SERVER-ERROR*******************/
 
-  $: isButtonEnabled = email && password && !errorTextServer && !pendingSubmit;
+  let errorTextServer = "";
+
+  const onInput = {
+    clearMessage: () => {
+      errorTextServer = "";
+    },
+  };
+
+  //*************SUBMIT-BUTTON-ENABLED*************//
+
+  $: submitButtonEnabled =
+    email && password && !errorTextServer && !pendingSubmit;
 </script>
 
 <div class="page log-in">
   <form on:submit={onSubmit} novalidate>
-    <p class="server-error-response">
-      {errorTextServer}
-    </p>
+    {#if errorTextServer}
+      <p class="server-error-response">
+        {errorTextServer}
+      </p>
+    {/if}
 
     <div class="input-container">
       <label for="email">Email</label>
       <input
         type="email"
         id="email"
-        on:input={clearErrorTextServer}
+        on:input={onInput.clearMessage}
         bind:value={email}
         autocomplete="on"
         disabled={pendingSubmit}
@@ -73,14 +71,15 @@
       <input
         type="password"
         id="password"
-        on:input={clearErrorTextServer}
+        on:input={onInput.clearMessage}
         bind:value={password}
         autocomplete="on"
         disabled={pendingSubmit}
         required
       />
     </div>
-    <button type="submit" disabled={!isButtonEnabled}>Log in!</button>
+
+    <button type="submit" disabled={!submitButtonEnabled}>Log in!</button>
   </form>
   <a class="page-redirect-link" href="/sign-up">New user? Sign up here!</a>
 </div>

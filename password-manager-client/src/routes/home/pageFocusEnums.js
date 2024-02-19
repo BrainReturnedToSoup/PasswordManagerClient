@@ -7,7 +7,9 @@ const secondaryFocusEnums = Object.freeze({
   credentials: Object.freeze({
     main: "main", //for the main credentials focus, the default focus essentially
     creator: "creator",
+    updater: "updater",
   }),
+  
   settings: Object.freeze({
     account: "account",
     preferences: "preferences",

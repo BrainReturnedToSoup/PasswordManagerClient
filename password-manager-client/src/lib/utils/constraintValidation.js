@@ -1,7 +1,7 @@
 function validateEmail(email) {
   if (!email) {
     return "";
-  } //for upon app start up validation
+  } //DO NOT REMOVE, WILL BREAK VALIDATION LOGIC IN INSTANCES OF COMPONENT INITIALIZATION
 
   const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     isValidEmail = emailPattern.test(email);
@@ -10,13 +10,13 @@ function validateEmail(email) {
     return `Email is invalid`;
   }
 
-  return ""; //blank string means valid
+  return "";
 }
 
 function validatePassword(password) {
   if (!password) {
     return "";
-  }
+  } //DO NOT REMOVE, WILL BREAK VALIDATION LOGIC IN INSTANCES OF COMPONENT INITIALIZATION
 
   if (password.length < 12) {
     return "Password is too small. Must be between 12 and 20 characters";
@@ -42,7 +42,7 @@ function validatePassword(password) {
 function validateConfirmPassword(confirmPassword, password) {
   if (!confirmPassword) {
     return "";
-  }
+  } //DO NOT REMOVE, WILL BREAK VALIDATION LOGIC IN INSTANCES OF COMPONENT INITIALIZATION
 
   if (confirmPassword !== password) {
     return `Confirm password does not match password`;

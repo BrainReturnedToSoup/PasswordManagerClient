@@ -1,109 +1,119 @@
 <script>
-  export let pendingLogout;
+  import { onDestroy } from "svelte";
+  import { disableButtonStateStore } from "../../../../lib/state/home/disableButton";
 
-  //*********************MISC***********************/
+  const stores = {
+    disableButtonStateStore,
+  }; //for property name reuse
+  let storeVals = {}; //reactive, as it contains the actual values of the store states
 
-  const blankString = "";
+  //for initializing the subscription instances, and ensuring proper cleanup
+  for (const [name, store] of Object.entries(stores)) {
+    const unsubscribe = store.subscribe((state) => {
+      const clone = { ...storeVals };
+      clone[name] = state;
+      storeVals = clone; //to activate reactivity on change
+    });
 
-  //****************COMPONENT-STATE****************//
+    onDestroy(unsubscribe); //ensure to unsubscribe on component destruction
+  }
 
-  let pendingSubmit = false;
+  //******************INPUT-STATE******************//
 
-  let oldPassword, newPassword, confirmPassword;
+  let oldPassword, newPassword, confirmNewPassword;
 
-  let errorTextServer = blankString,
-    errorTextNewPassword = blankString,
-    errorTextConfirmPassword = blankString;
-
-  //*************CONSTRAINT-VALIDATION*************//
+  //*************CONSTRAINT-VALIDATION*************/
 
   import {
     validatePassword,
     validateConfirmPassword,
-  } from "../../../../lib/constraintValidation";
+  } from "../../../../lib/utils/constraintValidation";
+
+  let errorTextNewPassword = "",
+    errorTextConfirmPassword = "";
 
   $: {
-    if (newPassword !== blankString) {
+    if (newPassword !== "") {
       errorTextNewPassword = validatePassword(newPassword);
     } else {
-      errorTextNewPassword = blankString;
+      errorTextNewPassword = "";
     }
   }
 
-  //included 'newPassword' condition for the sake of triggering reactivity based on
-  //changes to both confirmPassword and newPassword
+  //included 'newPassword' condition for the sake of triggering reactivity based on changes to both confirmPassword and newPassword
   $: {
-    if (confirmPassword !== blankString && newPassword !== blankString) {
+    if (confirmNewPassword !== "" && newPassword !== "") {
       errorTextConfirmPassword = validateConfirmPassword(
-        confirmPassword,
+        confirmNewPassword,
         newPassword
       );
     } else {
-      errorTextConfirmPassword = blankString;
+      errorTextConfirmPassword = "";
     }
   }
 
-  //*****************FORM-SUBMISSION****************//
+  //************BUTTON-DISABLED-FLAG**************/
 
-  import { handleNewPassword } from "../../../../lib/settingsHandlers";
+  $: submitButtonEnabled =
+    oldPassword &&
+    newPassword &&
+    confirmNewPassword &&
+    buttonEnabled &&
+    !errorTextNewPassword &&
+    !errorTextConfirmPassword &&
+    !pendingSubmit &&
+    !submitDisabled &&
+    !storeVals.disableButtonStateStore;
+
+  //***************FORM-SUBMISSION****************/
+
+  import { errorMessageStore } from "../../../../lib/state/home/error";
+  import { authStateStore } from "../../../../lib/state/auth/auth";
+  import { redirectToLoginStore } from "../../../../lib/state/auth/redirect";
+  import expiredSessionRedirect from "../../../../lib/utils/expiredSessionRedirect";
+  import settings from "../../../../lib/requestAPIs/settings";
+
+  let pendingSubmit = false;
 
   async function onSubmit(e) {
+    e.preventDefault();
+
     pendingSubmit = true;
 
-    e.preventDefault(); //going to make a manual AJAX request rather than let the form do so automatically
+    const result = await settings.put.password(oldPassword, newPassword);
 
-    let reqError, error;
-
-    try {
-      reqError = await handleNewPassword(oldPassword, newPassword);
-    } catch (err) {
-      error = err;
-    }
-
-    if (error) {
-      errorTextServer = error;
-    }
-
-    if (reqError) {
-      errorTextServer = reqError;
+    if (!result.success) {
+      if ("auth" in result && !result.auth) {
+        expiredSessionRedirect(); //the user's session was expired when the req was made
+      } else {
+        errorMessageStore.set(result.error); //an actual error occurred
+        submitDisabledDelay();
+      }
+    } else {
+      redirectToLoginStore.true(); //the account deleted, auto redirect to login
+      authStateStore.authedFalse();
     }
 
     pendingSubmit = false;
   }
 
-  //**************BUTTON-DISABLED-FLAG**************//
+  //*********************DISABLED*********************/
 
-  $: isButtonEnabled =
-    oldPassword &&
-    newPassword &&
-    confirmPassword &&
-    !errorTextServer &&
-    !errorTextNewPassword &&
-    !errorTextConfirmPassword &&
-    !pendingLogout &&
-    !pendingSubmit;
+  let submitDisabled = false;
 
-  //******************ERROR-MESSAGE****************//
+  function submitDisabledDelay(delayMs = 2000) {
+    submitDisabled = true;
 
-  function clearErrorTextServer() {
-    errorTextServer = blankString;
-  }
-
-  function clearErrorTextNewPw() {
-    errorTextNewPassword = blankString;
-  }
-
-  function clearErrorTextConfirmPw() {
-    errorTextConfirmPassword = blankString;
+    setTimeout(() => {
+      submitDisabled = false;
+    }, delayMs);
   }
 </script>
 
 <div class="new-password container">
   <h3 class="new-password header">New Password</h3>
 
-  <p class="new-password description"></p>
-
-  <p class="new-password server error-message">{errorTextServer}</p>
+  <p class="new-password description">Desc Here</p>
 
   <form on:submit={onSubmit}>
     <div class="new-password-old-password container">
@@ -112,50 +122,41 @@
         id="new-password-old-password"
         name="oldPassword"
         type="password"
-        disabled={pendingLogout}
+        disabled={storeVals.disableButtonStateStore}
         bind:value={oldPassword}
-        on:input={clearErrorTextServer}
       />
     </div>
+
+    <p class="new-password-new-password error-message">
+      {errorTextNewPassword}
+    </p>
 
     <div class="new-password-new-password container">
-      <p class="new-password-new-password error-message">
-        {errorTextNewPassword}
-      </p>
-
       <label for="new-password-new-password">New Password</label>
       <input
-        id="new-password-password"
+        id="new-password-new-password"
         name="newPassword"
         type="password"
-        disabled={pendingLogout}
+        disabled={storeVals.disableButtonStateStore}
         bind:value={newPassword}
-        on:input={() => {
-          clearErrorTextServer();
-          clearErrorTextNewPw();
-        }}
       />
     </div>
 
-    <div class="new-password-confirm-password container">
-      <p class="new-password-confirm-password error-message">
-        {errorTextConfirmPassword}
-      </p>
+    <p class="new-password-confirm-password error-message">
+      {errorTextConfirmPassword}
+    </p>
 
+    <div class="new-password-confirm-password container">
       <label for="new-password-confirm-password">Confirm New Password</label>
       <input
         id="new-password-confirm-password"
         name="confirmPassword"
         type="password"
-        disabled={pendingLogout}
-        bind:value={confirmPassword}
-        on:input={() => {
-          clearErrorTextServer();
-          clearErrorTextConfirmPw();
-        }}
+        disabled={storeVals.disableButtonStateStore}
+        bind:value={confirmNewPassword}
       />
     </div>
 
-    <button type="submit" disabled={!isButtonEnabled}>Set New Password</button>
+    <button type="submit" disabled={!submitButtonEnabled}>Set</button>
   </form>
 </div>

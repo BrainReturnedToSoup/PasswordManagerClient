@@ -1,67 +1,89 @@
 <script>
-  export let pendingLogout;
+  import { onDestroy } from "svelte";
+  import { disableButtonStateStore } from "../../../../lib/state/home/disableButton";
 
-  //*********************MISC***********************/
+  const stores = {
+    disableButtonStateStore,
+  }; //for property name reuse
+  let storeVals = {}; //reactive, as it contains the actual values of the store states
 
-  const blankString = "";
+  //for initializing the subscription instances, and ensuring proper cleanup
+  for (const [name, store] of Object.entries(stores)) {
+    const unsubscribe = store.subscribe((state) => {
+      const clone = { ...storeVals };
+      clone[name] = state;
+      storeVals = clone; //to activate reactivity on change
+    });
 
-  //****************COMPONENT-STATE****************//
+    onDestroy(unsubscribe); //ensure to unsubscribe on component destruction
+  }
 
-  let pendingSubmit = false;
+  //*******************BINDED-INPUT*****************//
+
   let email, password, confirmPassword;
-  let errorText = blankString;
+
+  //**************SUBMIT-BUTTON-DISABLED************//
+
+  //includes the disableButtonState value as part of the flags, but that
+  //isn't the only thing that can disable the submit button
+  $: submitButtonEnabled =
+    email &&
+    password &&
+    confirmPassword &&
+    buttonEnabled &&
+    !pendingSubmit &&
+    !submitDisabled &&
+    !storeVals.disableButtonStateStore;
 
   //*****************FORM-SUBMISSION****************//
 
-  import { handleDeleteAccount } from "../../../../lib/settingsHandlers";
+  import { errorMessageStore } from "../../../../lib/state/home/error";
+  import { authStateStore } from "../../../../lib/state/auth/auth";
+  import { redirectToLoginStore } from "../../../../lib/state/auth/redirect";
+  import expiredSessionRedirect from "../../../../lib/utils/expiredSessionRedirect";
+  import settings from "../../../../lib/requestAPIs/settings";
+
+  let pendingSubmit = false;
 
   async function onSubmit(e) {
+    e.preventDefault();
+
     pendingSubmit = true;
 
-    e.preventDefault(); //going to make a manual AJAX request rather than let the form do so automatically
+    const result = await settings.delete.account(email, password);
 
-    let reqError, error;
-
-    try {
-      reqError = await handleDeleteAccount(email, password);
-    } catch (err) {
-      error = err;
-    }
-
-    if (error) {
-      errorText = error;
-    }
-
-    if (reqError) {
-      errorText = reqError;
+    if (!result.success) {
+      if ("auth" in result && !result.auth) {
+        expiredSessionRedirect(); //the user's session was expired when the req was made
+      } else {
+        errorMessageStore.set(result.error); //an actual error occurred
+        disableSubmit();
+      }
+    } else {
+      redirectToLoginStore.true(); //the account deleted, auto redirect to login
+      authStateStore.authedFalse();
     }
 
     pendingSubmit = false;
   }
 
-  //**************BUTTON-DISABLED-FLAG**************//
+  //***************DISABLED*****************/
 
-  $: isButtonEnabled =
-    email &&
-    password &&
-    confirmPassword &&
-    !pendingLogout &&
-    !pendingSubmit &&
-    !errorText;
+  let submitDisabled = false;
 
-  //******************ERROR-MESSAGE****************//
+  function disableSubmit(delayMs = 2000) {
+    submitDisabled = true;
 
-  function clearErrorText() {
-    errorText = blankString;
+    setTimeout(() => {
+      submitDisabled = false;
+    }, delayMs);
   }
 </script>
 
 <div class="delete-account container">
   <h3 class="delete-account header">Delete Your Account</h3>
 
-  <p class="delete-account description"></p>
-
-  <p class="delete-account server error-message">{errorText}</p>
+  <p class="delete-account description">Desc Here</p>
 
   <form
     action="/home/settings/delete-account"
@@ -73,11 +95,8 @@
       id="delete-account-email"
       name="email"
       type="email"
-      disabled={pendingLogout}
+      disabled={storeVals.disableButtonStateStore}
       bind:value={email}
-      on:input={() => {
-        clearErrorText();
-      }}
     />
 
     <label for="delete-account-password">Password</label>
@@ -85,11 +104,8 @@
       id="delete-account-password"
       name="password"
       type="password"
-      disabled={pendingLogout}
+      disabled={storeVals.disableButtonStateStore}
       bind:value={password}
-      on:input={() => {
-        clearErrorText();
-      }}
     />
 
     <label for="delete-account-confirm-password">Confirm Password</label>
@@ -97,14 +113,9 @@
       id="delete-account-confirm-password"
       name="confirmPassword"
       type="password"
-      disabled={pendingLogout}
+      disabled={storeVals.disableButtonStateStore}
       bind:value={confirmPassword}
-      on:input={() => {
-        clearErrorText();
-      }}
     />
-    <button type="submit" disabled={!isButtonEnabled}
-      >Delete Your Account</button
-    >
+    <button type="submit" disabled={!submitButtonEnabled}>Delete</button>
   </form>
 </div>

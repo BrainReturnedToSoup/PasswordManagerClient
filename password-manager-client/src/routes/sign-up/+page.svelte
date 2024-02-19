@@ -1,9 +1,4 @@
 <script>
-  //*********TOOLS-HOOKS***********/
-
-  import { onDestroy } from "svelte";
-  import { goto } from "$app/navigation";
-
   //**********COMPONENTS***********/
 
   import Loading from "../loading.svelte";
@@ -11,49 +6,48 @@
 
   //**********AUTH-STATE***********/
 
+  import { onDestroy } from "svelte";
   import {
     pendingAuthCheckStore,
     authStateStore,
-    checkAuth,
-  } from "../../lib/state/authState";
+  } from "../../lib/state/auth/auth";
 
   const stores = {
     pendingAuthCheckStore,
     authStateStore,
   }; //for property name reuse
-
-  const subscriptions = {};
-  let currentAuthStoreVals = {}; //reactive, as it contains the actual values of the store states
+  let storeVals = {}; //reactive, as it contains the actual values of the store states
 
   //for initializing the subscription instances, and ensuring proper cleanup
   for (const [name, store] of Object.entries(stores)) {
-    subscriptions[name] = store.subscribe((state) => {
-      const clone = { ...currentAuthStoreVals };
+    const unsubscribe = store.subscribe((state) => {
+      const clone = { ...storeVals };
       clone[name] = state;
-      currentAuthStoreVals = clone; //to activate reactivity on change
+      storeVals = clone; //to activate reactivity on change
     });
 
-    onDestroy(subscriptions[name]); //ensure to unsubscribe on component destruction
+    onDestroy(unsubscribe); //ensure to unsubscribe on component destruction
   }
 
-  if (!currentAuthStoreVals.pendingAuthCheckStore) {
-    checkAuth();
-    //async function for updating the auth state, includes managing auth related flags.
-    //has its own error handling internally
+  //*************CHECK-AUTH-STATE***********/
+
+  import checkAuth from "../../lib/utils/checkAuth";
+
+  if (!storeVals.pendingAuthCheckStore) {
+    checkAuth(); //async function for retrieving the auth state and reflecting it in the auth state store
   }
 
   //**********AUTH-BASED-ROUTING************/
 
-  //make sure the request for current auth status isn't currently pending
-  $: if (
-    !currentAuthStoreVals.pendingAuthCheckStore &&
-    currentAuthStoreVals.authStateStore
-  ) {
+  import { goto } from "$app/navigation";
+
+  //redirect to home if the auth check is not pending, and the user authed already.
+  $: if (!storeVals.pendingAuthCheckStore && storeVals.authStateStore) {
     goto("/home");
   }
 </script>
 
-{#if !currentAuthStoreVals.pendingAuthCheckStore && !currentAuthStoreVals.localAuthStateStore}
+{#if !storeVals.pendingAuthCheckStore && !storeVals.localAuthStateStore}
   <Signup />
 {:else}
   <Loading />

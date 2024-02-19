@@ -1,80 +1,99 @@
 <script>
-  //returns validation error messages based on whether the supplied
-  //inputs are valid or not
+  //****************BINDED-INPUTS******************//
+
+  let email, password, confirmPassword;
+
+  //*************CONSTRAINT-VALIDATION*************//
+
   import {
     validateEmail,
     validatePassword,
     validateConfirmPassword,
-  } from "../../lib/constraintValidation";
+  } from "../../lib/utils/constraintValidation";
 
-  import { handleSignupRequest } from "../../lib/loginSignupHandlers";
-
-  //*********************MISC***********************/
-
-  const blankString = "";
-
-  //****************COMPONENT-STATE****************//
-
-  let email, password, confirmPassword;
-  let pendingSubmit = false;
-
-  let errorTextEmail = blankString,
-    errorTextPassword = blankString,
-    errorTextConfirmPassword = blankString;
-
-  let errorTextServer = blankString;
-
-  //*************CONSTRAINT-VALIDATION*************//
+  let errorTextEmail = "",
+    errorTextPassword = "",
+    errorTextConfirmPassword = "",
+    errorTextServer = "";
 
   $: {
-    if (email !== blankString) {
+    if (email !== "") {
       errorTextEmail = validateEmail(email);
     } else {
-      //only display error messages when the corresponding input field isn't blank
-      errorTextEmail = blankString;
+      errorTextEmail = ""; //only display error messages when the corresponding input field isn't blank
     }
   }
 
   $: {
-    if (password !== blankString) {
+    if (password !== "") {
       errorTextPassword = validatePassword(password);
     } else {
-      errorTextPassword = blankString;
+      errorTextPassword = "";
     }
   }
 
   //included 'password' condition for the sake of triggering reactivity based on
-  //changes to both confirmPassword and password
+  //changes to password as well, not just confirmPassword
   $: {
-    if (confirmPassword !== blankString && password !== blankString) {
+    if (confirmPassword !== "" && password !== "") {
       errorTextConfirmPassword = validateConfirmPassword(
         confirmPassword,
         password
       );
     } else {
-      errorTextConfirmPassword = blankString;
+      errorTextConfirmPassword = "";
     }
   }
 
-  function clearErrorTextServer() {
-    errorTextServer = blankString;
+  //*****************FORM-SUBMISSION****************//
+
+  import { redirectToHomeStore } from "../../lib/state/auth/redirect";
+  import { authStateStore } from "../../lib/state/auth/auth";
+  import authApis from "../../lib/requestAPIs/auth";
+
+  let pendingSubmit = false;
+
+  async function onSubmit(e) {
+    e.preventDefault();
+
+    pendingSubmit = true; //flag to prevent spamming requests for signing up
+
+    const result = await authApis.post.signup(email, password); //handles changing auth state itself, and rerouting will take effect reactively
+
+    if (!result.success && !result.auth) {
+      errorTextServer = result.error; //an error occured somewhere in the request lifecycle (client and server)
+    } else {
+      redirectToHomeStore.true(); //otherwise mean the use is authed from the successful login, or from the existing token in cookies.
+      authStateStore.authedTrue();
+    }
+
+    pendingSubmit = false; //reset the request flag
   }
 
-  function clearErrorTextEmail() {
-    errorTextEmail = blankString;
-  }
+  //*****************ON-INPUT************************/
 
-  function clearErrorTextPassword() {
-    errorTextPassword = blankString;
-  }
+  //for clearing the server error text and the corresponding error
+  //text to the specific input upon input change
+  const onInput = {
+    email: () => {
+      errorTextServer = "";
+      errorTextEmail = "";
+    },
 
-  function clearErrorTextConfirmPassword() {
-    errorTextConfirmPassword = blankString;
-  }
+    password: () => {
+      errorTextServer = "";
+      errorTextPassword = "";
+    },
 
-  //**************BUTTON-DISABLED-FLAG**************//
+    confirmPassword: () => {
+      errorTextServer = "";
+      errorTextConfirmPassword = "";
+    },
+  };
 
-  $: isButtonEnabled =
+  //*************SUBMIT-BUTTON-ENABLED**************//
+
+  $: submitButtonEnabled =
     email &&
     password &&
     confirmPassword &&
@@ -83,34 +102,6 @@
     !errorTextConfirmPassword &&
     !errorTextServer &&
     !pendingSubmit;
-
-  //*****************FORM-SUBMISSION****************//
-
-  async function onSubmit(e) {
-    e.preventDefault();
-
-    pendingSubmit = true; //flag to prevent spamming requests for signing up
-
-    let reqError, error;
-
-    try {
-      //will await the resolution of the promise for pendingSubmit flag execution order
-      reqError = await handleSignupRequest(email, password); //will handle changing auth state itself, and rerouting is based purely on auth state itself
-    } catch (err) {
-      console.error("sign-up submit error", err, err.stack);
-      error = err;
-    }
-
-    if (error) {
-      errorTextServer = error;
-    }
-
-    if (reqError) {
-      errorTextServer = reqError;
-    }
-
-    pendingSubmit = false;
-  }
 </script>
 
 <div class="page sign-up">
@@ -125,10 +116,7 @@
       <input
         id="email"
         type="email"
-        on:input={() => {
-          clearErrorTextServer(); //always clear the server message when any input is altered
-          clearErrorTextEmail();
-        }}
+        on:input={onInput.email}
         bind:value={email}
         disabled={pendingSubmit}
         required
@@ -141,10 +129,7 @@
       <input
         id="password"
         type="password"
-        on:input={() => {
-          clearErrorTextServer();
-          clearErrorTextPassword();
-        }}
+        on:input={onInput.password}
         bind:value={password}
         disabled={pendingSubmit}
         required
@@ -157,16 +142,14 @@
       <input
         id="confirm-password"
         type="password"
-        on:input={() => {
-          clearErrorTextServer();
-          clearErrorTextConfirmPassword();
-        }}
+        on:input={onInput.confirmPassword}
         bind:value={confirmPassword}
         disabled={pendingSubmit}
         required
       />
     </div>
-    <button type="submit" disabled={!isButtonEnabled}>Sign up!</button>
+
+    <button type="submit" disabled={!submitButtonEnabled}>Sign up!</button>
   </form>
   <a class="page-redirect-link" href="/log-in">Existing User? Log in here!</a>
 </div>

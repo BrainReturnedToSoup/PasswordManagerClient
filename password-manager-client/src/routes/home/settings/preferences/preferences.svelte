@@ -1,9 +1,6 @@
 <script>
   //have to bind the container element in order to access it's offsetTop DOM api
   export let preferencesContainer;
-
-  //for preventing certain functionalities that depend on a proper auth state
-  export let pendingLogout;
 </script>
 
 <div bind:this={preferencesContainer} class="settings-preferences container">
