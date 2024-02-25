@@ -5,6 +5,7 @@ import { credSetStore } from "../state/home/credSet";
 import { errorMessageStore } from "../state/home/error";
 import credApis from "../requestAPIs/credentials";
 import settingsApis from "../requestAPIs/settings";
+import homeApis from "../requestAPIs/home";
 
 const initHomeState = {
   settings: async () => {
@@ -46,6 +47,23 @@ const initHomeState = {
     }
 
     credSetStore.set(convertedSet);
+  },
+
+  email: async () => {
+    const result = await homeApis.get.email();
+
+    if (!result.success) {
+      if ("auth" in result && !result.auth) {
+        redirectToLoginStore.true();
+        authStateStore.authedFalse();
+        return;
+      }
+
+      errorMessageStore.set(result.error);
+      return "";
+    }
+
+    return result.email;
   },
 };
 

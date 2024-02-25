@@ -1,4 +1,8 @@
 <script>
+  //***********EMAIL-PROP**********/
+
+  export let email;
+
   //**********COMPONENTS***********/
 
   import Credentials from "./credentials/credentials.svelte";
@@ -88,7 +92,7 @@
     }, delayMs);
   }
 
-  //************ON-CLICK*************/
+  //************NAV-CLICK*************/
 
   //on click lifecycles for present buttons
   const navClick = {
@@ -139,8 +143,7 @@
 
   <nav>
     <div class="profile container">
-      <!-- ADD EMAIL FROM USER STORE -->
-      <!-- <h1 class="censored-email">{}</h1>  -->
+      <h1 class="censored-email">{email}</h1>
 
       <button
         class="log-out"

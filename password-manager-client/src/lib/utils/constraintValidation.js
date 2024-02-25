@@ -31,7 +31,7 @@ function validatePassword(password) {
     isValidPassword = passwordPattern.test(password);
 
   if (!isValidPassword) {
-    return `Password is invalid. Must adhere to the following rules;
+    return `Password is invalid. Must adhere to the following rules:
      Atleast one uppercase and lowercase letter, atleast one digit,
       atleast one special character, and only letters, digits, and specialized characters`;
   }
@@ -51,4 +51,20 @@ function validateConfirmPassword(confirmPassword, password) {
   return "";
 }
 
-export { validateEmail, validatePassword, validateConfirmPassword };
+function validateVerificationCode(code) {
+  const codePattern = /^[0-9]{1,6}$/,
+    isValidCode = codePattern.test(code);
+
+  if (!isValidCode) {
+    return `Verification code is invalid. Must adhere to the following rules: Only digits, max length: 6`;
+  }
+
+  return "";
+}
+
+export {
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validateVerificationCode,
+};

@@ -57,6 +57,7 @@
 
   import initHomeState from "../../lib/utils/initHomeState";
 
+  let retrievedEmail = "";
   let pendingInit = false; //for loading screen rendering
 
   async function init() {
@@ -64,6 +65,8 @@
 
     await initHomeState.settings();
     await initHomeState.credSet();
+
+    retrievedEmail = await initHomeState.email();
 
     pendingInit = false;
   }
@@ -76,7 +79,7 @@
 </script>
 
 {#if !storeVals.pendingAuthCheckStore && storeVals.authStateStore && !pendingInit}
-  <Home />
+  <Home email={retrievedEmail} />
 {:else}
   <Loading />
 {/if}

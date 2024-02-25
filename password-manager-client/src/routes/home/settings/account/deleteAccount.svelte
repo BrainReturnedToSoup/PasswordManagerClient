@@ -30,7 +30,6 @@
     email &&
     password &&
     confirmPassword &&
-    buttonEnabled &&
     !pendingSubmit &&
     !submitDisabled &&
     !storeVals.disableButtonStateStore;
@@ -43,7 +42,8 @@
   import expiredSessionRedirect from "../../../../lib/utils/expiredSessionRedirect";
   import settings from "../../../../lib/requestAPIs/settings";
 
-  let pendingSubmit = false;
+  let pendingSubmit = false,
+    submitDisabled = false;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -66,10 +66,6 @@
 
     pendingSubmit = false;
   }
-
-  //***************DISABLED*****************/
-
-  let submitDisabled = false;
 
   function disableSubmit(delayMs = 2000) {
     submitDisabled = true;

@@ -26,13 +26,13 @@
 
   import { validateEmail } from "../../../../lib/utils/constraintValidation";
 
-  let errorTextNewEmail = "";
+  let cvErrorMessageEmail;
 
   $: {
-    if (newEmail !== "") {
-      errorTextNewEmail = validateEmail(newEmail);
+    if (newEmail) {
+      cvErrorMessageEmail = validateEmail(newEmail);
     } else {
-      errorTextNewEmail = "";
+      cvErrorMessageEmail = "";
     }
   }
 
@@ -42,8 +42,7 @@
     oldEmail &&
     password &&
     newEmail &&
-    buttonEnabled &&
-    !errorTextNewEmail &&
+    !cvErrorMessageEmail &&
     !pendingSubmit &&
     !submitDisabled &&
     !storeVals.disableButtonStateStore;
@@ -56,7 +55,8 @@
   import expiredSessionRedirect from "../../../../lib/utils/expiredSessionRedirect";
   import settingsApis from "../../../../lib/requestAPIs/settings";
 
-  let pendingSubmit = false;
+  let pendingSubmit = false,
+    submitDisabled = false;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -79,10 +79,6 @@
 
     pendingSubmit = false;
   }
-
-  //*********************DISABLED*********************/
-
-  let submitDisabled = false;
 
   function disableSubmit(delayMs = 2000) {
     submitDisabled = true;
@@ -121,7 +117,7 @@
       />
     </div>
 
-    <p class="update-email-new-email error-message">{errorTextNewEmail}</p>
+    <p class="update-email-new-email error-message">{cvErrorMessageEmail}</p>
 
     <div class="update-email new-email container">
       <label for="update-email-new-email">New Email</label>

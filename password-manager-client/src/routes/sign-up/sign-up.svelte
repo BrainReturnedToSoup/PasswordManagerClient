@@ -11,39 +11,52 @@
     validateConfirmPassword,
   } from "../../lib/utils/constraintValidation";
 
-  let errorTextEmail = "",
-    errorTextPassword = "",
-    errorTextConfirmPassword = "",
-    errorTextServer = "";
+  let cvErrorMessageEmail,
+    cvErrorMessagePW,
+    cvErrorMessageCP,
+    cvErrorMessageServer;
 
   $: {
-    if (email !== "") {
-      errorTextEmail = validateEmail(email);
+    if (email) {
+      cvErrorMessageEmail = validateEmail(email);
     } else {
-      errorTextEmail = ""; //only display error messages when the corresponding input field isn't blank
+      cvErrorMessageEmail = ""; //only display error messages when the corresponding input field isn't blank
     }
   }
 
   $: {
-    if (password !== "") {
-      errorTextPassword = validatePassword(password);
+    if (password) {
+      cvErrorMessagePW = validatePassword(password);
     } else {
-      errorTextPassword = "";
+      cvErrorMessagePW = "";
     }
   }
 
-  //included 'password' condition for the sake of triggering reactivity based on
-  //changes to password as well, not just confirmPassword
   $: {
-    if (confirmPassword !== "" && password !== "") {
-      errorTextConfirmPassword = validateConfirmPassword(
-        confirmPassword,
-        password
-      );
+    if (confirmPassword && password) {
+      cvErrorMessageCP = validateConfirmPassword(confirmPassword, password);
     } else {
-      errorTextConfirmPassword = "";
+      cvErrorMessageCP = "";
     }
   }
+
+  //************CLEAR-SERVER-ERROR-MESSAGE***********/
+
+  function clearServerErrorMessage() {
+    cvErrorMessageServer = "";
+  }
+
+  //*************SUBMIT-BUTTON-ENABLED**************//
+
+  $: submitButtonEnabled =
+    email &&
+    password &&
+    confirmPassword &&
+    !cvErrorMessageEmail &&
+    !cvErrorMessagePW &&
+    !cvErrorMessageCP &&
+    !cvErrorMessageServer &&
+    !pendingSubmit;
 
   //*****************FORM-SUBMISSION****************//
 
@@ -61,62 +74,31 @@
     const result = await authApis.post.signup(email, password); //handles changing auth state itself, and rerouting will take effect reactively
 
     if (!result.success && !result.auth) {
-      errorTextServer = result.error; //an error occured somewhere in the request lifecycle (client and server)
+      cvErrorMessageServer = result.error; //an error occured somewhere in the request lifecycle (client and server)
     } else {
-      redirectToHomeStore.true(); //otherwise mean the use is authed from the successful login, or from the existing token in cookies.
+      redirectToHomeStore.true(); //means the user is authed from the successful login or from an existing token in cookies.
       authStateStore.authedTrue();
     }
 
     pendingSubmit = false; //reset the request flag
   }
-
-  //*****************ON-INPUT************************/
-
-  //for clearing the server error text and the corresponding error
-  //text to the specific input upon input change
-  const onInput = {
-    email: () => {
-      errorTextServer = "";
-      errorTextEmail = "";
-    },
-
-    password: () => {
-      errorTextServer = "";
-      errorTextPassword = "";
-    },
-
-    confirmPassword: () => {
-      errorTextServer = "";
-      errorTextConfirmPassword = "";
-    },
-  };
-
-  //*************SUBMIT-BUTTON-ENABLED**************//
-
-  $: submitButtonEnabled =
-    email &&
-    password &&
-    confirmPassword &&
-    !errorTextEmail &&
-    !errorTextPassword &&
-    !errorTextConfirmPassword &&
-    !errorTextServer &&
-    !pendingSubmit;
 </script>
 
 <div class="page sign-up">
-  <form on:submit={onSubmit} novalidate>
+  {#if cvErrorMessageServer}
     <p class="server-error-response">
-      {errorTextServer}
+      {cvErrorMessageServer}
     </p>
-
+  {/if}
+  
+  <form on:submit={onSubmit} novalidate>
     <div class="input-container">
-      <p class="input-error email">{errorTextEmail}</p>
+      <p class="input-error email">{cvErrorMessageEmail}</p>
       <label for="email">Email</label>
       <input
         id="email"
         type="email"
-        on:input={onInput.email}
+        on:input={clearServerErrorMessage}
         bind:value={email}
         disabled={pendingSubmit}
         required
@@ -124,12 +106,12 @@
     </div>
 
     <div class="input-container">
-      <p class="input-error password">{errorTextPassword}</p>
+      <p class="input-error password">{cvErrorMessagePW}</p>
       <label for="password">Password</label>
       <input
         id="password"
         type="password"
-        on:input={onInput.password}
+        on:input={clearServerErrorMessage}
         bind:value={password}
         disabled={pendingSubmit}
         required
@@ -137,12 +119,12 @@
     </div>
 
     <div class="input-container">
-      <p class="input-error confirm-password">{errorTextConfirmPassword}</p>
+      <p class="input-error confirm-password">{cvErrorMessageCP}</p>
       <label for="confirm-password">Confirm Password</label>
       <input
         id="confirm-password"
         type="password"
-        on:input={onInput.confirmPassword}
+        on:input={clearServerErrorMessage}
         bind:value={confirmPassword}
         disabled={pendingSubmit}
         required

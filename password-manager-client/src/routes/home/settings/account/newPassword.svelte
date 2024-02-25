@@ -18,7 +18,7 @@
     onDestroy(unsubscribe); //ensure to unsubscribe on component destruction
   }
 
-  //******************INPUT-STATE******************//
+  //*****************BINDED-INPUTS****************//
 
   let oldPassword, newPassword, confirmNewPassword;
 
@@ -29,26 +29,25 @@
     validateConfirmPassword,
   } from "../../../../lib/utils/constraintValidation";
 
-  let errorTextNewPassword = "",
-    errorTextConfirmPassword = "";
+  let cvErrorMessageNewPW, cvErrorMessageCP;
 
   $: {
-    if (newPassword !== "") {
-      errorTextNewPassword = validatePassword(newPassword);
+    if (newPassword) {
+      cvErrorMessageNewPW = validatePassword(newPassword);
     } else {
-      errorTextNewPassword = "";
+      cvErrorMessageNewPW = "";
     }
   }
 
   //included 'newPassword' condition for the sake of triggering reactivity based on changes to both confirmPassword and newPassword
   $: {
-    if (confirmNewPassword !== "" && newPassword !== "") {
-      errorTextConfirmPassword = validateConfirmPassword(
+    if (confirmNewPassword && newPassword) {
+      cvErrorMessageCP = validateConfirmPassword(
         confirmNewPassword,
         newPassword
       );
     } else {
-      errorTextConfirmPassword = "";
+      cvErrorMessageCP = "";
     }
   }
 
@@ -58,9 +57,8 @@
     oldPassword &&
     newPassword &&
     confirmNewPassword &&
-    buttonEnabled &&
-    !errorTextNewPassword &&
-    !errorTextConfirmPassword &&
+    !cvErrorMessageNewPW &&
+    !cvErrorMessageCP &&
     !pendingSubmit &&
     !submitDisabled &&
     !storeVals.disableButtonStateStore;
@@ -73,7 +71,8 @@
   import expiredSessionRedirect from "../../../../lib/utils/expiredSessionRedirect";
   import settings from "../../../../lib/requestAPIs/settings";
 
-  let pendingSubmit = false;
+  let pendingSubmit = false,
+    submitDisabled = false;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -96,10 +95,6 @@
 
     pendingSubmit = false;
   }
-
-  //*********************DISABLED*********************/
-
-  let submitDisabled = false;
 
   function submitDisabledDelay(delayMs = 2000) {
     submitDisabled = true;
@@ -128,7 +123,7 @@
     </div>
 
     <p class="new-password-new-password error-message">
-      {errorTextNewPassword}
+      {cvErrorMessageNewPW}
     </p>
 
     <div class="new-password-new-password container">
@@ -143,7 +138,7 @@
     </div>
 
     <p class="new-password-confirm-password error-message">
-      {errorTextConfirmPassword}
+      {cvErrorMessageCP}
     </p>
 
     <div class="new-password-confirm-password container">
